@@ -1,0 +1,3219 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karir Genta - Professional Dashboard</title>
+    
+    <meta name="theme-color" content="#0B1120">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    
+
+    <!-- Tailwind CSS & Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Marked.js & DOMPurify untuk parsing Markdown chat yang aman -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+    
+    <!-- Mammoth.js untuk membaca teks file .docx -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- PDF.js untuk membaca teks file .pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    
+    <!-- PizZip & Docxtemplater untuk memproses file .docx di browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+    
+    <!-- FileSaver.js untuk fitur Download otomatis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            bg: '#0B1120',       
+                            surface: '#1E293B',  
+                            border: '#334155',   
+                            accent: '#0EA5E9',   
+                            accentHover: '#0284C7',
+                            textMain: '#F8FAFC',
+                            textMuted: '#94A3B8'
+                        }
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.4s ease-out',
+                    },
+                    keyframes: {
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0B1120; color: #F8FAFC; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .role-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .role-card.selected { border-color: #0EA5E9; background-color: rgba(14, 165, 233, 0.15); box-shadow: 0 0 0 2px #0EA5E9; transform: scale(1.02); }
+        
+        .chat-widget-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .markdown-body p { margin-bottom: 0.5rem; }
+        .markdown-body strong { color: #38BDF8; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.5rem; }
+        .markdown-body code { background-color: rgba(15, 23, 42, 0.8); padding: 0.1rem 0.35rem; border-radius: 0.25rem; font-size: 0.8em; color: #38BDF8; }
+        
+        input[type="file"]::file-selector-button {
+            background-color: #0EA5E9;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        input[type="file"]::file-selector-button:hover { background-color: #0284C7; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex antialiased selection:bg-brand-accent selection:text-white">
+    <!-- Overlay Login Cloud (Supabase Auth) -->
+    <div id="authOverlay" class="hidden fixed inset-0 z-[90] bg-brand-bg/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-brand-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-slide-up">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">G</div>
+                <div>
+                    <h2 class="font-bold text-lg text-white">Karir Genta Cloud</h2>
+                    <p class="text-xs text-slate-400">Masuk untuk sinkronisasi HP & Laptop</p>
+                </div>
+            </div>
+            <form onsubmit="handleCloudLogin(event)" class="flex flex-col gap-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase">Email</label>
+                    <input type="email" id="loginEmail" required placeholder="email@anda.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-accent">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-accent">
+                </div>
+                <p id="loginErrorMsg" class="hidden text-xs text-rose-400"></p>
+                <button type="submit" id="btnLoginSubmit" class="mt-2 w-full bg-brand-accent hover:bg-brand-accentHover text-white font-bold py-3 rounded-xl shadow-lg transition-colors text-sm">
+                    Masuk Workspace
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Backdrop Gelap Sidebar Khusus Layar HP -->
+    <div id="sidebarBackdrop" onclick="toggleSidebar()" class="hidden fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-xs md:hidden"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-white px-6 py-3 rounded-full shadow-2xl z-[70] flex items-center gap-3 opacity-0 pointer-events-none transform -translate-y-4 transition-all duration-300">
+        <i id="toast-icon" class="ph ph-info text-xl text-brand-accent"></i>
+        <span id="toast-msg" class="text-sm font-medium">Message here</span>
+    </div>
+
+    <!-- Tombol Buka Sidebar (muncul saat sidebar dilipat) -->
+    <button id="sidebarExpandBtn" onclick="toggleSidebar()" title="Buka Sidebar" class="hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-xl bg-brand-surface/95 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white shadow-xl flex items-center justify-center transition-all backdrop-blur">
+        <i class="ph ph-sidebar-simple text-xl"></i>
+    </button>
+
+    <!-- Sidebar Navigation -->
+    <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-40 md:static md:z-20 w-64 bg-brand-surface border-r border-brand-border flex flex-col flex-shrink-0 shadow-xl transition-all duration-300 ease-in-out overflow-hidden">
+        <div class="p-6 border-b border-brand-border flex items-center justify-between gap-2 min-w-[16rem]">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-500/30 ring-2 ring-slate-800 flex-shrink-0">G</div>
+                <div>
+                    <h1 class="font-bold text-lg text-white leading-tight">Karir Genta</h1>
+                    <p class="text-[10px] text-brand-accent tracking-widest uppercase font-bold mt-0.5">Workspace</p>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" title="Lipat Sidebar" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                <i class="ph ph-caret-double-left text-lg"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 py-6 flex flex-col gap-1.5 px-4 overflow-y-auto min-w-[16rem]">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 px-2">Menu Utama</div>
+            
+            <button id="nav-dashboard" onclick="switchTab('view-dashboard')" class="nav-btn flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-brand-accent/10 text-brand-accent border border-brand-accent/20 transition-colors w-full text-left">
+                <i class="ph ph-layout text-xl"></i> Dashboard Loker
+            </button>
+
+            <button id="nav-database" onclick="switchTab('view-database')" class="nav-btn flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-brand-textMuted hover:text-white hover:bg-slate-800 border border-transparent transition-colors w-full text-left">
+                <i class="ph ph-database text-xl"></i> Database Portofolio
+            </button>
+            
+            <button id="nav-tracker" onclick="switchTab('view-tracker')" class="nav-btn flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-brand-textMuted hover:text-white hover:bg-slate-800 border border-transparent transition-colors w-full text-left">
+                <span class="flex items-center gap-3">
+                    <i class="ph ph-calendar-check text-xl"></i> Kalender & Tracker
+                </span>
+                <span id="badge-tracker" class="hidden text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <!-- SUBBAB TERPISAH: RADAR LOKER (JOBSTREET & GLINTS) -->
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-5 mb-1 px-2">Radar Loker</div>
+
+            <button id="nav-radar-jobstreet" onclick="switchTab('view-radar', 'Jobstreet')" class="nav-btn flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-brand-textMuted hover:text-white hover:bg-slate-800 border border-transparent transition-colors w-full text-left">
+                <span class="flex items-center gap-3">
+                    <i class="ph ph-broadcast text-xl text-sky-400"></i> Jobstreet
+                </span>
+                <span id="badge-jobstreet" class="hidden items-center gap-1 text-[10px] font-bold bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full shadow-md shadow-sky-500/30">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>
+                    <span id="badge-jobstreet-text">1 baru</span>
+                </span>
+            </button>
+
+            <button id="nav-radar-glints" onclick="switchTab('view-radar', 'Glints')" class="nav-btn flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-brand-textMuted hover:text-white hover:bg-slate-800 border border-transparent transition-colors w-full text-left">
+                <span class="flex items-center gap-3">
+                    <i class="ph ph-lightning text-xl text-amber-400"></i> Glints
+                </span>
+                <span id="badge-glints" class="hidden items-center gap-1 text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full shadow-md shadow-amber-500/30">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>
+                    <span id="badge-glints-text">1 baru</span>
+                </span>
+            </button>
+        </nav>
+
+        <div class="p-5 border-t border-brand-border min-w-[16rem]">
+            <!-- Status Ringkas Mesin Bot -->
+            <div id="cloudAccountBar" class="hidden mb-2.5 flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-[11px]">
+                <span id="cloudSyncStatus" class="text-emerald-400 font-medium truncate">☁️ Tersinkron</span>
+                <button type="button" onclick="handleCloudLogout()" title="Keluar Akun" class="text-slate-400 hover:text-rose-400 transition-colors ml-2 flex-shrink-0">
+                    <i class="ph ph-sign-out text-sm"></i>
+                </button>
+            </div>
+		<div id="sidebarBotPill" onclick="switchTab('view-radar', activeRadarSource)" class="mb-3 flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-2 cursor-pointer hover:border-slate-700 transition-colors" title="Klik untuk membuka saklar Radar Loker">
+                <span class="flex items-center gap-2 text-[11px] font-semibold text-slate-300">
+                    <span id="sidebarBotDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="sidebarBotText">Menghubungkan...</span>
+                </span>
+                <i class="ph ph-sliders-horizontal text-slate-500 text-sm"></i>
+            </div>
+
+            <!-- API Key & Tombol Pengaturan Model AI -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2.5 bg-slate-900 rounded-lg p-2.5 border border-slate-800 flex-1 min-w-0">
+                    <i class="ph ph-key text-brand-accent text-base flex-shrink-0"></i>
+                    <input type="password" id="globalApiKey" placeholder="Gemini API Key..." class="bg-transparent w-full text-xs text-white focus:outline-none placeholder-slate-600" autocomplete="off">
+                </div>
+                <button onclick="openAiSettingsModal()" title="Pengaturan Model AI Gemini" class="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-brand-accent/60 rounded-lg text-slate-400 hover:text-brand-accent transition-colors flex-shrink-0">
+                    <i class="ph ph-gear-six text-base"></i>
+                </button>
+            </div>
+            <p id="sidebarModelSummary" onclick="openAiSettingsModal()" class="text-[10px] text-slate-500 hover:text-slate-300 mt-2 px-1 truncate cursor-pointer transition-colors" title="Klik untuk ubah model Gemini">
+                Model: -
+            </p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto relative bg-brand-bg">
+        
+        <!-- ================= VIEW: DASHBOARD (Analisis Loker) ================= -->
+        <div id="view-dashboard" class="block">
+            <div class="bg-gradient-to-b from-brand-surface to-brand-bg pt-12 pb-8 px-10 border-b border-brand-border/50">
+                <div class="max-w-5xl mx-auto flex flex-wrap justify-between items-end gap-6 animate-slide-up">
+                    <div>
+                        <p class="text-brand-accent font-semibold tracking-wider text-sm mb-2 flex items-center gap-2"><i class="ph-fill ph-sparkle"></i> SYSTEM READY</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">Selamat datang,<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Pak Genta Arya Kusuma!</span></h2>
+                    </div>
+
+                    <!-- Widget Jam & Tanggal Real-Time -->
+                    <div class="bg-slate-900/80 border border-slate-700/80 rounded-2xl px-6 py-4 shadow-xl min-w-[235px]">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <span id="dashboardClock" class="text-3xl font-bold text-white tracking-wider font-mono tabular-nums">--:--:--</span>
+                            <span class="text-xs font-bold text-brand-accent bg-brand-accent/10 border border-brand-accent/20 px-2 py-0.5 rounded-md">WIB</span>
+                        </div>
+                        <p id="dashboardDate" class="text-xs text-slate-400 mt-1.5 flex items-center gap-1.5 font-medium">
+                            <i class="ph-fill ph-calendar-blank text-brand-accent"></i>
+                            <span>Memuat tanggal...</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-5xl mx-auto p-10 pb-32">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Left: Job Input -->
+                    <div class="lg:col-span-5 flex flex-col gap-4 animate-slide-up" style="animation-delay: 0.1s;">
+                        <div class="bg-brand-surface rounded-2xl border border-brand-border p-6 shadow-xl h-full flex flex-col">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400"><i class="ph ph-briefcase text-lg"></i></div>
+                                <h3 class="font-bold text-white text-lg">Detail Lowongan</h3>
+                            </div>
+                            
+                            <div class="flex flex-col gap-4 flex-1">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">Posisi / Jabatan</label>
+                                    <input type="text" id="jobTitleInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-brand-accent" placeholder="Contoh: Automation Engineer">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">Nama Perusahaan</label>
+                                    <input type="text" id="companyNameInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-brand-accent" placeholder="Contoh: PT Voksel Electric Tbk.">
+                                </div>
+                                <div class="flex-1 flex flex-col mt-2">
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">Deskripsi & Syarat Pekerjaan</label>
+                                    <textarea id="jobSpecInput" class="flex-1 min-h-[160px] w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-brand-accent resize-y" placeholder="Paste detail jobdesc dari loker di sini (atau klik 'Pakai ke Generator CV' dari tab Jobstreet / Glints)..."></textarea>
+                                </div>
+                            </div>
+
+                            <button id="btnAnalyze" onclick="autoAnalyzeAndSelect()" class="mt-6 w-full bg-brand-accent hover:bg-brand-accentHover text-white font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                                <i class="ph-fill ph-magic-wand text-xl"></i> Analisis & Pilih Portofolio
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Portfolio Selection -->
+                    <div class="lg:col-span-7 flex flex-col gap-4 animate-slide-up" style="animation-delay: 0.2s;">
+                        <div class="bg-brand-surface rounded-2xl border border-brand-border p-6 shadow-xl h-full flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400"><i class="ph ph-crosshair text-lg"></i></div>
+                                    <div>
+                                        <h3 class="font-bold text-white text-lg">Rekomendasi Portofolio</h3>
+                                        <p class="text-xs text-slate-400">AI akan otomatis menyorot profil yang paling relevan.</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="roleSelectionGrid">
+                                    <div data-role="Power System" class="role-card bg-slate-900 border border-slate-700 rounded-xl p-4 cursor-pointer flex items-center gap-4" onclick="selectRole(this, 'Power System')">
+                                        <div class="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center"><i class="ph-fill ph-lightning text-2xl text-yellow-500"></i></div>
+                                        <div><h4 class="font-bold text-sm text-white">Power System</h4><p class="text-[10px] text-slate-400 mt-1">ETAP, Load Flow, Short Circuit</p></div>
+                                    </div>
+                                    <div data-role="Maintenance" class="role-card bg-slate-900 border border-slate-700 rounded-xl p-4 cursor-pointer flex items-center gap-4" onclick="selectRole(this, 'Maintenance')">
+                                        <div class="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center"><i class="ph-fill ph-wrench text-2xl text-orange-500"></i></div>
+                                        <div><h4 class="font-bold text-sm text-white">Maintenance</h4><p class="text-[10px] text-slate-400 mt-1">PLC, VFD Altivar, Troubleshooting</p></div>
+                                    </div>
+                                    <div data-role="Automation" class="role-card bg-slate-900 border border-slate-700 rounded-xl p-4 cursor-pointer flex items-center gap-4" onclick="selectRole(this, 'Automation')">
+                                        <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center"><i class="ph-fill ph-robot text-2xl text-emerald-500"></i></div>
+                                        <div><h4 class="font-bold text-sm text-white">Automation</h4><p class="text-[10px] text-slate-400 mt-1">Control System, TIA Portal</p></div>
+                                    </div>
+                                    <div data-role="RnD Embedded" class="role-card bg-slate-900 border border-slate-700 rounded-xl p-4 cursor-pointer flex items-center gap-4" onclick="selectRole(this, 'RnD Embedded')">
+                                        <div class="w-12 h-12 rounded-full bg-cyan-500/10 flex items-center justify-center"><i class="ph-fill ph-cpu text-2xl text-cyan-500"></i></div>
+                                        <div><h4 class="font-bold text-sm text-white">RnD / Embedded</h4><p class="text-[10px] text-slate-400 mt-1">STM32, KiCad, Power Electronics</p></div>
+                                    </div>
+                                    <div data-role="Testing Validation" class="role-card bg-slate-900 border border-slate-700 rounded-xl p-4 cursor-pointer flex items-center gap-4" onclick="selectRole(this, 'Testing Validation')">
+                                        <div class="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center"><i class="ph-fill ph-check-circle text-2xl text-purple-500"></i></div>
+                                        <div><h4 class="font-bold text-sm text-white">Testing & Validation</h4><p class="text-[10px] text-slate-400 mt-1">QC Methods, Commissioning</p></div>
+                                    </div>
+                                    <div data-role="Generic" class="role-card bg-slate-900 border border-slate-700 rounded-xl p-4 cursor-pointer flex items-center gap-4 selected" onclick="selectRole(this, 'Generic')">
+                                        <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center"><i class="ph-fill ph-user-focus text-2xl text-blue-500"></i></div>
+                                        <div><h4 class="font-bold text-sm text-white">Electrical Generic</h4><p class="text-[10px] text-slate-400 mt-1">Kombinasi merata</p></div>
+                                    </div>
+                                </div>
+                            </div>
+
+<div class="mt-6 pt-6 border-t border-slate-700/70 flex flex-col sm:flex-row gap-3">
+    <button id="btnGenerateCV" onclick="generateCustomCV()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 text-sm">
+        <i class="ph-fill ph-file-doc text-xl"></i>
+        Racik & Preview CV (.docx)
+    </button>
+    <button id="btnGenerateCover" onclick="generateCoverLetter()" class="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 text-sm">
+        <i class="ph-fill ph-envelope-simple text-xl"></i>
+        Buat Body Email & Lamaran
+    </button>
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: RADAR LOKER (CHANNEL DINAMIS JOBSTREET / GLINTS) ================= -->
+        <div id="view-radar" class="hidden h-full flex flex-col">
+            <!-- Header Channel -->
+            <div class="bg-brand-surface border-b border-brand-border px-8 py-5 flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
+                <div class="flex items-center gap-4">
+                    <div id="radarHeaderIconBox" class="w-11 h-11 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                        <i id="radarHeaderIcon" class="ph-fill ph-broadcast text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="radarHeaderTitle" class="text-xl font-bold text-white">Radar Loker Jobstreet (0–1 Thn)</h2>
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Auto-Sync 30d
+                            </span>
+                        </div>
+                        <p id="radarLastSync" class="text-xs text-slate-400 mt-0.5">Menunggu data dari scraper_realtime.py (loker_feed.js)...</p>
+                    </div>
+                </div>
+
+                <button onclick="loadLokerFeed(false)" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                    <i class="ph ph-arrows-clockwise text-lg text-brand-accent"></i> Refresh Feed
+                </button>
+            </div>
+
+            <!-- PANEL SAKLAR KIRI (LAPTOP NYALA) / KANAN (LAPTOP MATI) -->
+            <div class="bg-slate-900/90 border-b border-brand-border px-8 py-4 flex flex-col gap-3 flex-shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-3 bg-slate-950 border border-slate-700 px-4 py-2 rounded-xl shadow-inner">
+                            <span id="labelModeNyala" onclick="setSaklarMode('laptop_nyala')" class="cursor-pointer text-xs font-bold text-emerald-400 flex items-center gap-1.5 select-none transition-colors">
+                                <i class="ph-fill ph-laptop text-base"></i> Laptop Nyala
+                            </span>
+
+                            <button id="saklarModeBtn" onclick="toggleSaklarMode()" type="button" title="Geser ke kiri: Mode Laptop Nyala | Geser ke kanan: Mode Laptop Mati" class="relative inline-flex h-7 w-14 items-center rounded-full bg-emerald-500/25 border border-emerald-500/60 transition-all duration-300 focus:outline-none">
+                                <span id="saklarModeKnob" class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-slate-950 shadow-md transform transition-transform duration-300 translate-x-1">
+                                    <i id="saklarModeIcon" class="ph-fill ph-laptop text-xs"></i>
+                                </span>
+                            </button>
+
+                            <span id="labelModeMati" onclick="setSaklarMode('laptop_mati')" class="cursor-pointer text-xs font-bold text-slate-500 flex items-center gap-1.5 select-none transition-colors">
+                                <i class="ph-fill ph-cloud text-base"></i> Laptop Mati
+                            </span>
+                        </div>
+
+                        <div id="autoRunToggleWrap" class="flex items-center gap-2.5 bg-slate-800/80 border border-slate-700 px-3.5 py-2 rounded-xl transition-opacity">
+                            <span class="text-xs font-semibold text-slate-300">Auto-Loop</span>
+                            <button id="btnToggleAuto" onclick="toggleAutoLoop()" type="button" class="relative inline-flex h-5 w-10 items-center rounded-full bg-emerald-500 transition-colors focus:outline-none">
+                                <span id="toggleKnob" class="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform translate-x-5"></span>
+                            </button>
+                            <span id="toggleLabel" class="text-[11px] font-bold text-emerald-400 w-7">ON</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="text-right">
+                            <p id="ctrlStatusText" class="text-xs font-medium text-slate-200">Menghubungkan ke mesin Python...</p>
+                            <p id="ctrlNextText" class="text-[11px] text-slate-400">Cek berikutnya: -</p>
+                        </div>
+                        <button id="btnScanNow" onclick="triggerScanNow()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors shadow">
+                            <i class="ph-fill ph-magnifying-glass"></i> Scan Sekarang
+                        </button>
+                    </div>
+                </div>
+
+                <div id="bannerModeMati" class="hidden items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/35 text-amber-200 px-4 py-2.5 rounded-xl text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <i class="ph-fill ph-wrench text-amber-400 text-lg flex-shrink-0"></i>
+                        <span><strong>Mode Laptop Mati — Fitur sedang dikembangkan.</strong> Bot lokal sementara dijeda. Geser saklar ke kiri (<strong>Laptop Nyala</strong>) untuk menjalankan pemindaian otomatis terus-menerus.</span>
+                    </div>
+                    <button onclick="setSaklarMode('laptop_nyala')" class="flex-shrink-0 bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-200 font-semibold px-3 py-1 rounded-lg transition-colors">
+                        Kembali ke Kiri
+                    </button>
+                </div>
+            </div>
+
+            <!-- Area Bubble Chat Searah (Difilter sesuai subbab Jobstreet / Glints) -->
+            <div id="radarFeedContainer" class="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-6 max-w-4xl w-full mx-auto"></div>
+
+            <div class="bg-brand-surface/80 border-t border-brand-border px-8 py-3.5 text-center flex-shrink-0">
+                <p id="radarFooterNote" class="text-xs text-slate-400 flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-lock-simple text-slate-500"></i>
+                    Saluran siaran searah — pesan otomatis masuk dari <code class="text-brand-accent bg-slate-900 px-1.5 py-0.5 rounded">scraper_realtime.py</code> bersamaan dengan notifikasi WhatsApp.
+                </p>
+            </div>
+        </div>
+
+	<!-- ================= VIEW: KALENDER REKRUTMEN & TRACKER LAMARAN ================= -->
+        <div id="view-tracker" class="hidden">
+            <div class="bg-gradient-to-b from-slate-800 to-brand-bg pt-12 pb-8 px-10 border-b border-brand-border/50">
+                <div class="max-w-5xl mx-auto flex flex-wrap items-end justify-between gap-4 animate-slide-up">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2"><i class="ph-fill ph-calendar-check text-emerald-400 mr-3"></i>Kalender & Tracker Lamaran</h2>
+                        <p class="text-slate-400 text-sm">Pantau progres lamaran, jadwal psikotes/interview, dan hindari lamar dua kali.</p>
+                    </div>
+                    <button onclick="openTrackerForm()" class="bg-brand-accent hover:bg-brand-accentHover text-white font-bold py-2.5 px-5 rounded-xl shadow-lg flex items-center gap-2 text-sm transition-colors">
+                        <i class="ph-fill ph-plus-circle text-lg"></i> Catat Lamaran Baru
+                    </button>
+                </div>
+            </div>
+
+            <div class="max-w-5xl mx-auto p-10 pb-32 flex flex-col gap-6 animate-slide-up">
+                <!-- Ringkasan Statistik -->
+                <div id="trackerStatsGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
+
+                <!-- Jadwal Terdekat (Psikotes / Interview) -->
+                <div id="upcomingScheduleBox" class="hidden bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-5">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="ph-fill ph-bell-ringing text-indigo-400 text-lg"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Agenda Rekrutmen Terdekat</h3>
+                    </div>
+                    <div id="upcomingScheduleList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+
+                <!-- Form Tambah / Edit Lamaran (Tersembunyi sampai tombol diklik) -->
+                <div id="trackerFormCard" class="hidden bg-brand-surface border border-brand-accent/40 rounded-2xl p-6 shadow-xl">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-5 pb-3 border-b border-slate-700">
+                        <h3 id="trackerFormTitle" class="font-bold text-white text-base">Catat Lamaran Baru</h3>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="fillTrackerFromDashboard()" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sky-300 px-3 py-1.5 rounded-lg transition-colors">
+                                Ambil dari Dashboard
+                            </button>
+                            <button type="button" onclick="closeTrackerForm()" class="text-slate-400 hover:text-white px-2">
+                                <i class="ph ph-x text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="trkEditId">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Posisi / Jabatan *</label>
+                            <input type="text" id="trkPosisi" placeholder="Electrical Engineer" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Perusahaan *</label>
+                            <input type="text" id="trkPerusahaan" placeholder="PT Contoh Industri" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Sumber / Portal</label>
+                            <select id="trkPortal" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                                <option value="Jobstreet">Jobstreet</option>
+                                <option value="Glints">Glints</option>
+                                <option value="Email / Web">Email / Web Perusahaan</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="CPNS / BUMN">CPNS / BUMN / BPS</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Status</label>
+                            <select id="trkStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                                <option value="Dilamar">Dilamar</option>
+                                <option value="Psikotes">Psikotes</option>
+                                <option value="Interview">Interview</option>
+                                <option value="Offering">Offering</option>
+                                <option value="Ditolak">Ditolak</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Tanggal Lamar</label>
+                            <input type="date" id="trkAppliedDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Tanggal Jadwal Berikutnya</label>
+                            <input type="date" id="trkNextDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Agenda / Jam Jadwal</label>
+                            <input type="text" id="trkNextAgenda" placeholder="Misal: Interview HRD 10:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Link Loker (Opsional)</label>
+                            <input type="text" id="trkLink" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono outline-none focus:border-brand-accent">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Catatan (Lokasi, Gaji, Kontak HR)</label>
+                            <input type="text" id="trkNotes" placeholder="Gresik / Surabaya, ekspektasi gaji, dll." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="closeTrackerForm()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800">Batal</button>
+                        <button type="button" onclick="saveTrackerEntry()" class="px-5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5">
+                            <i class="ph-fill ph-floppy-disk"></i> Simpan ke Tracker
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter & Pencarian -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-brand-surface border border-brand-border rounded-xl p-4">
+                    <div class="flex flex-wrap gap-1.5" id="trackerFilterBtns">
+                        <button onclick="setTrackerFilter('ALL')" data-filter="ALL" class="trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-accent text-white">Semua</button>
+                        <button onclick="setTrackerFilter('Dilamar')" data-filter="Dilamar" class="trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white">Dilamar</button>
+                        <button onclick="setTrackerFilter('Psikotes')" data-filter="Psikotes" class="trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white">Psikotes</button>
+                        <button onclick="setTrackerFilter('Interview')" data-filter="Interview" class="trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white">Interview</button>
+                        <button onclick="setTrackerFilter('Offering')" data-filter="Offering" class="trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white">Offering</button>
+                        <button onclick="setTrackerFilter('Ditolak')" data-filter="Ditolak" class="trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white">Ditolak</button>
+                    </div>
+                    <input type="text" id="trackerSearchInput" oninput="renderTrackerView()" placeholder="Cari posisi / perusahaan..." class="bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-accent w-full sm:w-56">
+                </div>
+
+                <!-- Daftar Lamaran -->
+                <div id="trackerListContainer" class="flex flex-col gap-3"></div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: DATABASE PORTOFOLIO ================= -->
+        <div id="view-database" class="hidden">
+            <div class="bg-gradient-to-b from-slate-800 to-brand-bg pt-12 pb-8 px-10 border-b border-brand-border/50">
+                <div class="max-w-4xl mx-auto flex flex-wrap items-end justify-between gap-4 animate-slide-up">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2"><i class="ph-fill ph-database text-brand-accent mr-3"></i>Master Database Portofolio</h2>
+                        <p class="text-slate-400">Atur bahan baku proyek, referensi lama, template CV, serta cadangan backup lokal Anda.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <!-- Backup & Restore JSON -->
+                        <button onclick="exportBackupJSON()" title="Unduh cadangan seluruh proyek, link, tone bahasa, dan template .docx" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold py-2.5 px-4 rounded-lg text-sm flex items-center gap-2 transition-colors">
+                            <i class="ph ph-download-simple text-base text-sky-400"></i> Export Backup
+                        </button>
+                        <button onclick="document.getElementById('importBackupInput').click()" title="Pulihkan database dari file backup .json" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold py-2.5 px-4 rounded-lg text-sm flex items-center gap-2 transition-colors">
+                            <i class="ph ph-upload-simple text-base text-amber-400"></i> Import Backup
+                        </button>
+                        <input type="file" id="importBackupInput" accept=".json" class="hidden" onchange="importBackupJSON(event)">
+
+                        <!-- Simpan Database -->
+                        <button id="btnSaveDatabase" onclick="saveDatabase()" class="relative bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-lg shadow-lg flex items-center gap-2 transition-colors text-sm">
+                            <i class="ph-fill ph-floppy-disk text-lg"></i> Simpan Database
+                            <span id="unsavedBadge" class="hidden absolute -top-2 -right-2 bg-amber-400 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow">Belum disimpan</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-4xl mx-auto p-10 pb-32 flex flex-col gap-8 animate-slide-up">
+                
+                <!-- Subbab 1: Project Dinamis -->
+                <div class="bg-brand-surface p-8 rounded-2xl border border-brand-border shadow-lg">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-bold text-white text-xl border-l-4 border-brand-accent pl-3">1. Data Proyek & Pengalaman</h3>
+                        <button onclick="addProjectField(); markDatabaseDirty();" class="text-brand-accent hover:text-white bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i class="ph ph-plus-circle text-lg"></i> Tambah Proyek Lain
+                        </button>
+                    </div>
+                    <div id="project-container" class="flex flex-col gap-6">
+                        <div class="project-item bg-slate-900 border border-slate-700 p-6 rounded-xl relative group">
+                            <button onclick="this.parentElement.remove(); markDatabaseDirty();" class="absolute top-4 right-4 text-slate-500 hover:text-red-500 hidden group-hover:block transition-colors"><i class="ph-fill ph-trash text-xl"></i></button>
+                            <div class="grid grid-cols-4 gap-4 mb-4">
+                                <div class="col-span-3">
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Judul Proyek</label>
+                                    <input type="text" placeholder="Contoh: ZVS Inverter 50-100kHz" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent">
+                                </div>
+                                <div class="col-span-1">
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Tahun</label>
+                                    <input type="text" placeholder="2025" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs font-semibold text-slate-400 mb-1.5">Deskripsi & Tujuan</label>
+                                <textarea placeholder="Merancang rangkaian phase-shift zero-voltage switching pakai mikrokontroler STM32F1..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent resize-y h-20"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1.5">Hasil yang Dicapai / Spesifikasi</label>
+                                <textarea placeholder="Efisiensi daya mencapai X%, desain layout PCB custom selesai, dll." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent resize-y h-20"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subbab 2: Referensi Lama -->
+                <div class="bg-brand-surface p-8 rounded-2xl border border-brand-border shadow-lg">
+                    <h3 class="font-bold text-white text-xl border-l-4 border-indigo-500 pl-3 mb-6">2. Referensi & Gaya Bahasa</h3>
+                    <p class="text-sm text-slate-400 mb-6">Upload file PDF/Word dari CV atau Cover Letter lama Anda agar AI dapat meniru struktur kata dan gaya bahasa (Tone of Voice) Anda secara akurat.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-900 border border-slate-700 p-5 rounded-xl">
+                            <label class="block text-sm font-semibold text-white mb-2"><i class="ph-fill ph-file-text text-indigo-400 mr-2"></i>Upload Referensi CV Lama</label>
+                            <input type="file" id="refCvInput" accept=".pdf,.doc,.docx" class="text-slate-400 text-sm mt-2 w-full">
+                        </div>
+                        <div class="bg-slate-900 border border-slate-700 p-5 rounded-xl">
+                            <label class="block text-sm font-semibold text-white mb-2"><i class="ph-fill ph-envelope-open text-indigo-400 mr-2"></i>Upload Surat Lamaran Lama</label>
+                            <input type="file" id="refCoverInput" accept=".pdf,.doc,.docx" class="text-slate-400 text-sm mt-2 w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subbab 3: Template Rahasia -->
+                <div class="bg-brand-surface p-8 rounded-2xl border border-brand-border shadow-lg">
+                    <h3 class="font-bold text-white text-xl border-l-4 border-emerald-500 pl-3 mb-4">3. Template Word Rahasia (.docx)</h3>
+                    <p class="text-sm text-slate-400 mb-5">Upload file Microsoft Word CV Anda yang desain kop-nya sudah rapi, lalu ganti bagian isi dinamis dengan salah satu atau seluruh kode placeholder di bawah ini:</p>
+
+                    <!-- Panduan Tag Placeholder Lengkap (Klik untuk Copy) -->
+                    <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-4 mb-6">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                                <i class="ph-fill ph-code"></i> Daftar Tag Placeholder (Klik untuk Salin)
+                            </span>
+                            <span class="text-[11px] text-slate-500">Tips: ketik/paste utuh tanpa edit sebagian agar XML Word tidak pecah</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="copyTemplateTag('{{AI_RINGKASAN}}')" class="group flex items-center gap-1.5 bg-slate-800 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/50 px-3 py-1.5 rounded-lg text-xs font-mono text-emerald-300 transition-colors" title="Ringkasan profil profesional 3-4 kalimat">
+                                <span>{{AI_RINGKASAN}}</span>
+                                <i class="ph ph-copy text-slate-500 group-hover:text-emerald-300"></i>
+                            </button>
+                            <button type="button" onclick="copyTemplateTag('{{AI_PENGALAMAN}}')" class="group flex items-center gap-1.5 bg-slate-800 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/50 px-3 py-1.5 rounded-lg text-xs font-mono text-emerald-300 transition-colors" title="Daftar proyek & pengalaman teknis dengan bullet points">
+                                <span>{{AI_PENGALAMAN}}</span>
+                                <i class="ph ph-copy text-slate-500 group-hover:text-emerald-300"></i>
+                            </button>
+                            <button type="button" onclick="copyTemplateTag('{{AI_SKILL}}')" class="group flex items-center gap-1.5 bg-slate-800 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/50 px-3 py-1.5 rounded-lg text-xs font-mono text-emerald-300 transition-colors" title="Daftar Hard Skills & Software yang relevan ATS">
+                                <span>{{AI_SKILL}}</span>
+                                <i class="ph ph-copy text-slate-500 group-hover:text-emerald-300"></i>
+                            </button>
+                            <button type="button" onclick="copyTemplateTag('{{POSISI_TARGET}}')" class="group flex items-center gap-1.5 bg-slate-800 hover:bg-sky-500/20 border border-slate-700 hover:border-sky-500/50 px-3 py-1.5 rounded-lg text-xs font-mono text-sky-300 transition-colors" title="Nama jabatan dari input Detail Lowongan">
+                                <span>{{POSISI_TARGET}}</span>
+                                <i class="ph ph-copy text-slate-500 group-hover:text-sky-300"></i>
+                            </button>
+                            <button type="button" onclick="copyTemplateTag('{{NAMA_PERUSAHAAN}}')" class="group flex items-center gap-1.5 bg-slate-800 hover:bg-sky-500/20 border border-slate-700 hover:border-sky-500/50 px-3 py-1.5 rounded-lg text-xs font-mono text-sky-300 transition-colors" title="Nama perusahaan tujuan dari input Detail Lowongan">
+                                <span>{{NAMA_PERUSAHAAN}}</span>
+                                <i class="ph ph-copy text-slate-500 group-hover:text-sky-300"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900 border border-dashed border-slate-600 p-8 rounded-xl flex flex-col items-center justify-center text-center">
+                        <i class="ph-fill ph-file-doc text-5xl text-slate-500 mb-3"></i>
+                        <h4 class="text-white font-medium mb-1">Pilih File Template CV</h4>
+                        <p id="docxTemplateStatus" class="text-xs text-slate-400 mb-4">Hanya mendukung format .docx</p>
+                        <input type="file" id="docxTemplateInput" accept=".docx" onchange="markDatabaseDirty()" class="text-slate-400 text-sm mx-auto">
+                    </div>
+                </div>
+
+                <!-- Subbab 4: Link Portofolio Drive -->
+                <div class="bg-brand-surface p-8 rounded-2xl border border-brand-border shadow-lg">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-bold text-white text-xl border-l-4 border-pink-500 pl-3">4. Link Portofolio (G-Drive)</h3>
+                        <button onclick="addLinkField(); markDatabaseDirty();" class="text-brand-accent hover:text-white bg-slate-900 border border-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i class="ph ph-plus-circle text-lg"></i> Tambah Link
+                        </button>
+                    </div>
+                    <div id="link-container" class="flex flex-col gap-4">
+                        <div class="link-item flex gap-4 items-center bg-slate-900 border border-slate-700 p-4 rounded-xl group relative">
+                            <i class="ph-fill ph-link text-xl text-slate-500"></i>
+                            <div class="flex-1 grid grid-cols-2 gap-4">
+                                <input type="text" placeholder="Deskripsi Singkat (Misal: PPT Smart Elevator)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                                <input type="text" placeholder="https://drive.google.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent font-mono">
+                            </div>
+                            <button onclick="this.parentElement.remove(); markDatabaseDirty();" class="text-slate-500 hover:text-red-500 transition-colors px-2"><i class="ph-fill ph-x-circle text-xl"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Pengaturan Model AI -->
+    <div id="aiSettingsModal" class="hidden fixed inset-0 z-[60] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-brand-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div class="px-6 py-4 bg-slate-900/90 border-b border-slate-700 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-brand-accent/15 text-brand-accent flex items-center justify-center">
+                        <i class="ph-fill ph-sliders text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm">Pengaturan Model Gemini AI</h3>
+                        <p class="text-[11px] text-slate-400">Ubah ID model tanpa mengedit kode HTML</p>
+                    </div>
+                </div>
+                <button onclick="closeAiSettingsModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 flex flex-col gap-5">
+                <!-- Model Analisis & CV -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase">Model Analisis & Generator CV</label>
+                    <input type="text" id="inputModelAnalisis" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-brand-accent" placeholder="Contoh: gemini-2.5-flash">
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" onclick="applyModelPreset('inputModelAnalisis', 'gemini-2.5-flash')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-2.5 py-1 rounded-md font-mono">gemini-2.5-flash</button>
+                        <button type="button" onclick="applyModelPreset('inputModelAnalisis', 'gemini-2.5-pro')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-2.5 py-1 rounded-md font-mono">gemini-2.5-pro</button>
+                        <button type="button" onclick="applyModelPreset('inputModelAnalisis', 'gemini-3.8-flash')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-md font-mono">gemini-3.8-flash</button>
+                    </div>
+                </div>
+
+                <!-- Model Chat & Tone -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase">Model Asisten Chat & Ekstraksi Gaya Bahasa</label>
+                    <input type="text" id="inputModelChat" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-brand-accent" placeholder="Contoh: gemini-2.5-flash-lite">
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" onclick="applyModelPreset('inputModelChat', 'gemini-2.5-flash-lite')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 px-2.5 py-1 rounded-md font-mono">gemini-2.5-flash-lite</button>
+                        <button type="button" onclick="applyModelPreset('inputModelChat', 'gemini-2.5-flash')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 px-2.5 py-1 rounded-md font-mono">gemini-2.5-flash</button>
+                        <button type="button" onclick="applyModelPreset('inputModelChat', 'gemini-3.5-flash-lite')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-md font-mono">gemini-3.5-flash-lite</button>
+                    </div>
+                </div>
+
+                <!-- Opsi Thinking Config -->
+                <label class="flex items-start gap-3 bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 cursor-pointer">
+                    <input type="checkbox" id="inputEnableThinking" class="mt-0.5 rounded accent-sky-500 w-4 h-4">
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-200">Kirim parameter <code class="text-brand-accent">thinkingConfig (thinkingLevel)</code></span>
+                        <span class="block text-[11px] text-slate-400 mt-0.5">Matikan opsi ini jika muncul error HTTP 400 pada model Gemini 2.0 / 2.5.</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-900/70 border-t border-slate-700 flex items-center justify-end gap-2.5">
+                <button onclick="closeAiSettingsModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Batal</button>
+                <button onclick="saveAiSettings()" class="px-4 py-2 rounded-lg text-xs font-bold bg-brand-accent hover:bg-brand-accentHover text-white shadow transition-colors flex items-center gap-1.5">
+                    <i class="ph-fill ph-check"></i> Simpan Pengaturan
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- Modal Preview & Edit CV Sebelum Download -->
+    <div id="cvPreviewModal" onclick="if(event.target === this) closeCvPreviewModal()" class="hidden fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-brand-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up">
+            <div class="px-6 py-4 bg-slate-900/90 border-b border-slate-700 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                        <i class="ph-fill ph-file-doc text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm">Preview & Edit Konten CV</h3>
+                        <p id="prevCvSubtitle" class="text-[11px] text-slate-400">Cek ulang angka & istilah teknis sebelum dicetak ke .docx</p>
+                    </div>
+                </div>
+                <button onclick="closeCvPreviewModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
+                <div>
+                    <label class="block text-xs font-semibold text-emerald-400 mb-1.5 font-mono">{{AI_RINGKASAN}}</label>
+                    <textarea id="prevAiRingkasan" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 resize-y"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-emerald-400 mb-1.5 font-mono">{{AI_PENGALAMAN}}</label>
+                    <textarea id="prevAiPengalaman" rows="7" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 resize-y"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-emerald-400 mb-1.5 font-mono">{{AI_SKILL}}</label>
+                    <textarea id="prevAiSkill" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 resize-y"></textarea>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-900/70 border-t border-slate-700 flex items-center justify-end gap-2.5 flex-shrink-0">
+                <button onclick="closeCvPreviewModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Batal</button>
+                <button onclick="confirmDownloadCV()" class="px-5 py-2.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-colors flex items-center gap-2">
+                    <i class="ph-fill ph-download-simple text-base"></i> Download CV (.docx)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Generator Body Email & Surat Lamaran -->
+    <div id="coverLetterModal" onclick="if(event.target === this) closeCoverLetterModal()" class="hidden fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-brand-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up">
+            <div class="px-6 py-4 bg-slate-900/90 border-b border-slate-700 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+                        <i class="ph-fill ph-envelope-open text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-white text-sm">Body Email & Cover Letter</h3>
+                            <span id="coverToneBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Gaya Standar</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Siap edit lalu salin langsung ke Gmail atau portal loker</p>
+                    </div>
+                </div>
+                <button onclick="closeCoverLetterModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-semibold text-slate-400 uppercase">Subjek Email</label>
+                        <button onclick="copyFieldText('coverSubjectInput', 'Subjek email')" class="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1">
+                            <i class="ph ph-copy"></i> Copy Subjek
+                        </button>
+                    </div>
+                    <input type="text" id="coverSubjectInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-semibold text-slate-400 uppercase">Isi Body Email / Surat Lamaran</label>
+                        <button onclick="copyFieldText('coverBodyInput', 'Body email')" class="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1">
+                            <i class="ph ph-copy"></i> Copy Body
+                        </button>
+                    </div>
+                    <textarea id="coverBodyInput" rows="11" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-sm text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-500 resize-y"></textarea>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-900/70 border-t border-slate-700 flex flex-wrap items-center justify-between gap-2.5 flex-shrink-0">
+                <button onclick="openInGmailDraft()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 transition-colors flex items-center gap-1.5">
+                    <i class="ph-fill ph-paper-plane-tilt text-sky-400"></i> Buka Draft di Gmail
+                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="closeCoverLetterModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Tutup</button>
+                    <button onclick="copyFieldText('coverBodyInput', 'Body email')" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition-colors flex items-center gap-1.5">
+                        <i class="ph-fill ph-copy"></i> Salin Isi Lamaran
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Mini Chat Widget -->
+    <!-- Popup Tanya Catat ke Tracker Setelah Download CV -->
+    <div id="askTrackModal" onclick="if(event.target === this) closeAskTrackModal()" class="hidden fixed inset-0 z-[65] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-brand-surface border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div class="p-6 text-center">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-check-circle text-3xl"></i>
+                </div>
+                <h3 class="text-white font-bold text-base mb-1">CV Berhasil Diunduh!</h3>
+                <p class="text-xs text-slate-400 mb-4">Mau langsung catat lowongan ini ke Tracker sebagai <strong class="text-emerald-400">Dilamar</strong>?</p>
+
+                <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-3.5 text-left mb-4">
+                    <p id="askTrackPosisi" class="text-sm font-bold text-white truncate">-</p>
+                    <p id="askTrackPerusahaan" class="text-xs text-sky-400 truncate mt-0.5">-</p>
+                </div>
+
+                <div class="text-left mb-5">
+                    <label class="block text-[11px] font-semibold text-slate-400 mb-1 uppercase">Sumber / Portal Lamaran</label>
+                    <select id="askTrackPortal" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none focus:border-brand-accent">
+                        <option value="Jobstreet">Jobstreet</option>
+                        <option value="Glints">Glints</option>
+                        <option value="Email / Web">Email / Web Perusahaan</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="CPNS / BUMN">CPNS / BUMN / BPS</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <button type="button" onclick="closeAskTrackModal()" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors">
+                        Tidak, Nanti Saja
+                    </button>
+                    <button type="button" onclick="confirmSaveToTrackerFromCV()" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-colors flex items-center justify-center gap-1.5">
+                        <i class="ph-fill ph-check-square"></i> Ya, Catat Dilamar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div id="chatWindow" class="hidden w-[360px] h-[480px] bg-brand-surface border border-slate-600 rounded-2xl shadow-2xl mb-4 flex flex-col overflow-hidden chat-widget-enter">
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-4 border-b border-slate-700 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent flex items-center justify-center text-white"><i class="ph-fill ph-sparkle"></i></div>
+                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-slate-900 rounded-full"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-bold text-sm">Asisten AI Genta</h4>
+                        <p class="text-[10px] text-brand-accent">Powered by Gemini</p>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="text-slate-400 hover:text-white transition-colors"><i class="ph ph-x text-lg"></i></button>
+            </div>
+            
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto bg-brand-bg/50 flex flex-col gap-4 text-sm">
+                <div class="flex gap-3 max-w-[85%]">
+                    <div class="w-6 h-6 rounded-full bg-brand-accent/20 flex-shrink-0 flex items-center justify-center text-brand-accent mt-1"><i class="ph-fill ph-robot text-xs"></i></div>
+                    <div class="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-none p-3 text-slate-200">
+                        Halo Mas Genta! Siap bedah loker atau racik portofolio hari ini?
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-800 border-t border-slate-700">
+                <div class="relative flex items-center">
+                    <input type="text" id="chatInput" placeholder="Ketik pesan Anda..." class="w-full bg-slate-900 border border-slate-600 rounded-full pl-4 pr-12 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent" onkeypress="handleChatEnter(event)">
+                    <button onclick="sendChatMessage()" class="absolute right-1.5 w-8 h-8 rounded-full bg-brand-accent hover:bg-brand-accentHover text-white flex items-center justify-center"><i class="ph-fill ph-paper-plane-right"></i></button>
+                </div>
+            </div>
+        </div>
+        <button id="chatToggleBtn" onclick="toggleChat()" class="w-14 h-14 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform"><i class="ph-fill ph-chat-teardrop-dots text-3xl"></i></button>
+    </div>
+
+    <!-- Javascript Logic -->
+<script>
+    const DEFAULT_AI_SETTINGS = {
+        modelAnalisis: 'gemini-2.5-flash',
+        modelChat: 'gemini-2.5-flash-lite',
+        enableThinking: false
+    };
+    const AI_SETTINGS_KEY   = 'gentaAiSettings';
+    const SIDEBAR_STATE_KEY = 'gentaSidebarCollapsed';
+    const GEMINI_API_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models';
+    const BASE_TITLE        = 'Karir Genta - Professional Dashboard';
+    const READ_KEYS_STORAGE = 'gentaRadarReadKeys';
+    const IS_LOCAL_ENV = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+    const BOT_API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8765' : '';
+
+    let selectedRole = 'Generic';
+    let currentTab = 'view-dashboard';
+    let activeRadarSource = 'Jobstreet'; // 'Jobstreet' atau 'Glints'
+    let chatHistory = [];
+    let cachedRadarBatches = [];
+    let sessionUnreadKeys = new Set();
+
+    let botStateUI = {
+        online: false,
+        mode: 'laptop_nyala',
+        auto_run: true,
+        is_scanning: false,
+        last_scan_at: '-',
+        next_run_at: '-',
+        last_result: 'Menghubungkan ke mesin Python...'
+    };
+    let prevBotScanning = false;
+
+    // ================= PENGATURAN MODEL AI DINAMIS =================
+    function getAiSettings() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(AI_SETTINGS_KEY) || '{}');
+            return {
+                modelAnalisis: saved.modelAnalisis || DEFAULT_AI_SETTINGS.modelAnalisis,
+                modelChat: saved.modelChat || DEFAULT_AI_SETTINGS.modelChat,
+                enableThinking: typeof saved.enableThinking === 'boolean' ? saved.enableThinking : DEFAULT_AI_SETTINGS.enableThinking
+            };
+        } catch {
+            return { ...DEFAULT_AI_SETTINGS };
+        }
+    }
+
+    function updateSidebarModelLabel() {
+        const el = document.getElementById('sidebarModelSummary');
+        if (!el) return;
+        const cfg = getAiSettings();
+        el.innerText = `AI: ${cfg.modelAnalisis}`;
+        el.title = `Analisis/CV: ${cfg.modelAnalisis}\nChat/Tone: ${cfg.modelChat}\nKlik untuk mengubah`;
+    }
+
+    function openAiSettingsModal() {
+        const cfg = getAiSettings();
+        document.getElementById('inputModelAnalisis').value = cfg.modelAnalisis;
+        document.getElementById('inputModelChat').value = cfg.modelChat;
+        document.getElementById('inputEnableThinking').checked = cfg.enableThinking;
+        document.getElementById('aiSettingsModal').classList.remove('hidden');
+    }
+
+    function closeAiSettingsModal() {
+        document.getElementById('aiSettingsModal').classList.add('hidden');
+    }
+
+    function applyModelPreset(inputId, modelName) {
+        const input = document.getElementById(inputId);
+        if (input) input.value = modelName;
+        if (inputId === 'inputModelAnalisis') {
+            document.getElementById('inputEnableThinking').checked = modelName.includes('gemini-3');
+        }
+    }
+
+    function saveAiSettings() {
+        const modelAnalisis = document.getElementById('inputModelAnalisis').value.trim();
+        const modelChat = document.getElementById('inputModelChat').value.trim();
+        const enableThinking = document.getElementById('inputEnableThinking').checked;
+
+        if (!modelAnalisis || !modelChat) {
+            showToast('Nama model analisis dan chat tidak boleh kosong.', 'warning');
+            return;
+        }
+
+        localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({ modelAnalisis, modelChat, enableThinking }));
+        scheduleCloudSync();
+        updateSidebarModelLabel();
+        closeAiSettingsModal();
+        showToast(`Model diperbarui: ${modelAnalisis}`, 'success');
+    }
+
+    // ================= SIDEBAR COLLAPSE =================
+	function applySidebarState(collapsed) {
+        const sidebar = document.getElementById('mainSidebar');
+        const expandBtn = document.getElementById('sidebarExpandBtn');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (!sidebar || !expandBtn) return;
+
+        if (collapsed) {
+            sidebar.classList.remove('w-64', 'border-r');
+            sidebar.classList.add('w-0', 'border-r-0', 'opacity-0', 'pointer-events-none');
+            expandBtn.classList.remove('hidden');
+            if (backdrop) backdrop.classList.add('hidden');
+        } else {
+            sidebar.classList.add('w-64', 'border-r');
+            sidebar.classList.remove('w-0', 'border-r-0', 'opacity-0', 'pointer-events-none');
+            expandBtn.classList.add('hidden');
+            if (backdrop && window.innerWidth < 768) backdrop.classList.remove('hidden');
+        }
+    }
+
+    function toggleSidebar() {
+        const isCurrentlyCollapsed = localStorage.getItem(SIDEBAR_STATE_KEY) === 'true';
+        const nextState = !isCurrentlyCollapsed;
+        localStorage.setItem(SIDEBAR_STATE_KEY, String(nextState));
+        applySidebarState(nextState);
+    }
+
+    // ================= HELPERS =================
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function copyTemplateTag(tagText) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(tagText)
+                .then(() => showToast(`Tag ${tagText} disalin ke clipboard!`, 'success'))
+                .catch(() => fallbackCopyText(tagText));
+        } else {
+            fallbackCopyText(tagText);
+        }
+    }
+
+    function fallbackCopyText(text) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        temp.remove();
+        showToast(`Tag ${text} disalin ke clipboard!`, 'success');
+    }
+
+    function markDatabaseDirty() {
+        const badge = document.getElementById('unsavedBadge');
+        if (badge) badge.classList.remove('hidden');
+    }
+
+    function clearDatabaseDirty() {
+        const badge = document.getElementById('unsavedBadge');
+        if (badge) badge.classList.add('hidden');
+    }
+
+    function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 0x8000;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        return btoa(binary);
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binary = atob(base64);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    // Normalisasi batch lama (tanpa field source) & baru agar selalu rapi terpisah per portal
+    function normalizeBatches(rawBatches) {
+        const result = [];
+        (rawBatches || []).forEach((batch) => {
+            if (batch.source) {
+                const src = batch.source === 'Glints' ? 'Glints' : 'Jobstreet';
+                result.push({
+                    ...batch,
+                    source: src,
+                    _key: String(batch.batch_id || `${src}_${batch.waktu}_${(batch.items || []).length}`)
+                });
+            } else {
+                const grouped = {};
+                (batch.items || []).forEach(item => {
+                    const src = item.source === 'Glints' ? 'Glints' : 'Jobstreet';
+                    if (!grouped[src]) grouped[src] = [];
+                    grouped[src].push(item);
+                });
+                Object.keys(grouped).forEach(src => {
+                    result.push({
+                        batch_id: batch.batch_id ? `${batch.batch_id}_${src}` : undefined,
+                        source: src,
+                        waktu: batch.waktu,
+                        items: grouped[src],
+                        _key: String(batch.batch_id ? `${batch.batch_id}_${src}` : `${src}_${batch.waktu}_${grouped[src].length}`)
+                    });
+                });
+            }
+        });
+        return result;
+    }
+
+    function getReadBatchKeys() {
+        try {
+            return new Set(JSON.parse(localStorage.getItem(READ_KEYS_STORAGE) || '[]'));
+        } catch {
+            return new Set();
+        }
+    }
+
+    function markSourceAsRead(batches, source) {
+        const readKeys = getReadBatchKeys();
+        batches.forEach(b => {
+            if (b.source === source) readKeys.add(b._key);
+        });
+        localStorage.setItem(READ_KEYS_STORAGE, JSON.stringify(Array.from(readKeys).slice(-120)));
+        scheduleCloudSync();
+    }
+
+    function updatePortalBadge(badgeId, textId, count) {
+        const badge = document.getElementById(badgeId);
+        const textEl = document.getElementById(textId);
+        if (!badge || !textEl) return;
+
+        if (count > 0) {
+            textEl.innerText = `${count} baru`;
+            badge.classList.remove('hidden');
+            badge.classList.add('inline-flex');
+        } else {
+            badge.classList.add('hidden');
+            badge.classList.remove('inline-flex');
+        }
+    }
+
+    function updateAllUnreadBadges() {
+        const readKeys = getReadBatchKeys();
+        let unreadJobstreet = 0;
+        let unreadGlints = 0;
+
+        cachedRadarBatches.forEach(b => {
+            if (!readKeys.has(b._key)) {
+                if (b.source === 'Glints') unreadGlints++;
+                else unreadJobstreet++;
+            }
+        });
+
+        updatePortalBadge('badge-jobstreet', 'badge-jobstreet-text', unreadJobstreet);
+        updatePortalBadge('badge-glints', 'badge-glints-text', unreadGlints);
+
+        const totalUnread = unreadJobstreet + unreadGlints;
+        document.title = totalUnread > 0 ? `(${totalUnread}) ${BASE_TITLE}` : BASE_TITLE;
+    }
+
+    function updateRadarHeaderUI() {
+        const iconBox = document.getElementById('radarHeaderIconBox');
+        const iconEl = document.getElementById('radarHeaderIcon');
+        const titleEl = document.getElementById('radarHeaderTitle');
+        if (!iconBox || !iconEl || !titleEl) return;
+
+        if (activeRadarSource === 'Glints') {
+            iconBox.className = 'w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400';
+            iconEl.className = 'ph-fill ph-lightning text-2xl';
+            titleEl.innerText = 'Radar Loker Glints (0–1 Thn)';
+        } else {
+            iconBox.className = 'w-11 h-11 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400';
+            iconEl.className = 'ph-fill ph-broadcast text-2xl';
+            titleEl.innerText = 'Radar Loker Jobstreet (0–1 Thn)';
+        }
+    }
+
+    // INISIALISASI
+    document.addEventListener('DOMContentLoaded', () => {
+        const apiKeyInput = document.getElementById('globalApiKey');
+        const savedApiKey = localStorage.getItem('karirGentaApiKey');
+        if (savedApiKey) apiKeyInput.value = savedApiKey;
+        apiKeyInput.addEventListener('input', (e) => localStorage.setItem('karirGentaApiKey', e.target.value.trim()));
+
+        // Deteksi perubahan input di Database Portofolio untuk badge "Belum disimpan"
+        const projectCont = document.getElementById('project-container');
+        const linkCont = document.getElementById('link-container');
+        if (projectCont) projectCont.addEventListener('input', markDatabaseDirty);
+        if (linkCont) linkCont.addEventListener('input', markDatabaseDirty);
+
+        // Tutup modal jika klik area backdrop gelap
+        const aiModal = document.getElementById('aiSettingsModal');
+        if (aiModal) {
+            aiModal.addEventListener('click', (e) => {
+                if (e.target === aiModal) closeAiSettingsModal();
+            });
+        }
+
+	const defaultCollapsed = window.innerWidth < 768 ? true : localStorage.getItem(SIDEBAR_STATE_KEY) === 'true';
+        applySidebarState(defaultCollapsed);
+        updateSidebarModelLabel();
+        loadDatabase();
+        initReferenceUploaders();
+        renderSaklarUI();
+        startDashboardClock();
+        updateTrackerSidebarBadge();
+        initCloudAuthAndSync();
+
+        if (IS_LOCAL_ENV) {
+            pollBotStatus();
+            setInterval(pollBotStatus, 3000);
+        }
+        setInterval(() => loadLokerFeed(true), 30000);
+    });
+
+    function startDashboardClock() {
+        const clockEl = document.getElementById('dashboardClock');
+        const dateEl = document.getElementById('dashboardDate')?.querySelector('span');
+        if (!clockEl || !dateEl) return;
+
+        function updateClock() {
+            const now = new Date();
+            const jam = String(now.getHours()).padStart(2, '0');
+            const menit = String(now.getMinutes()).padStart(2, '0');
+            const detik = String(now.getSeconds()).padStart(2, '0');
+            clockEl.innerText = `${jam}:${menit}:${detik}`;
+
+            dateEl.innerText = now.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
+
+    // ================= SAKLAR MODE (KIRI = NYALA | KANAN = MATI) =================
+    function renderSaklarUI() {
+        const isNyala = botStateUI.mode === 'laptop_nyala';
+        const btnSaklar = document.getElementById('saklarModeBtn');
+        const knobSaklar = document.getElementById('saklarModeKnob');
+        const iconSaklar = document.getElementById('saklarModeIcon');
+        const labelNyala = document.getElementById('labelModeNyala');
+        const labelMati = document.getElementById('labelModeMati');
+        const bannerMati = document.getElementById('bannerModeMati');
+        const autoWrap = document.getElementById('autoRunToggleWrap');
+        const btnToggleAuto = document.getElementById('btnToggleAuto');
+        const toggleKnob = document.getElementById('toggleKnob');
+        const toggleLabel = document.getElementById('toggleLabel');
+        const statusText = document.getElementById('ctrlStatusText');
+        const nextText = document.getElementById('ctrlNextText');
+        const btnScan = document.getElementById('btnScanNow');
+        const sideDot = document.getElementById('sidebarBotDot');
+        const sideText = document.getElementById('sidebarBotText');
+
+        if (!btnSaklar) return;
+
+        if (isNyala) {
+            btnSaklar.className = 'relative inline-flex h-7 w-14 items-center rounded-full bg-emerald-500/25 border border-emerald-500/60 transition-all duration-300 focus:outline-none';
+            knobSaklar.className = 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-slate-950 shadow-md transform transition-transform duration-300 translate-x-1';
+            iconSaklar.className = 'ph-fill ph-laptop text-xs';
+            labelNyala.className = 'cursor-pointer text-xs font-bold text-emerald-400 flex items-center gap-1.5 select-none transition-colors';
+            labelMati.className = 'cursor-pointer text-xs font-bold text-slate-500 flex items-center gap-1.5 select-none transition-colors';
+            bannerMati.classList.add('hidden');
+            bannerMati.classList.remove('flex');
+            autoWrap.classList.remove('opacity-40', 'pointer-events-none');
+        } else {
+            btnSaklar.className = 'relative inline-flex h-7 w-14 items-center rounded-full bg-amber-500/20 border border-amber-500/50 transition-all duration-300 focus:outline-none';
+            knobSaklar.className = 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-md transform transition-transform duration-300 translate-x-[30px]';
+            iconSaklar.className = 'ph-fill ph-cloud text-xs';
+            labelNyala.className = 'cursor-pointer text-xs font-bold text-slate-500 flex items-center gap-1.5 select-none transition-colors';
+            labelMati.className = 'cursor-pointer text-xs font-bold text-amber-400 flex items-center gap-1.5 select-none transition-colors';
+            bannerMati.classList.remove('hidden');
+            bannerMati.classList.add('flex');
+            autoWrap.classList.add('opacity-40', 'pointer-events-none');
+        }
+
+        if (botStateUI.auto_run && isNyala) {
+            btnToggleAuto.className = 'relative inline-flex h-5 w-10 items-center rounded-full bg-emerald-500 transition-colors focus:outline-none';
+            toggleKnob.className = 'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform translate-x-5';
+            toggleLabel.innerText = 'ON';
+            toggleLabel.className = 'text-[11px] font-bold text-emerald-400 w-7';
+        } else {
+            btnToggleAuto.className = 'relative inline-flex h-5 w-10 items-center rounded-full bg-slate-600 transition-colors focus:outline-none';
+            toggleKnob.className = 'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform translate-x-1';
+            toggleLabel.innerText = 'OFF';
+            toggleLabel.className = 'text-[11px] font-bold text-slate-400 w-7';
+        }
+
+        statusText.classList.remove('hidden');
+
+	if (!botStateUI.online) {
+            if (!IS_LOCAL_ENV) {
+                statusText.innerHTML = '<span class="text-sky-400">☁️ Mode Cloud / HP Aktif</span>';
+                nextText.innerText = 'Feed tersinkron otomatis dari Supabase. Saklar fisik dikendalikan dari laptop.';
+                btnScan.disabled = true;
+                btnScan.classList.add('opacity-50', 'cursor-not-allowed');
+                sideDot.className = 'w-2 h-2 rounded-full bg-sky-400 animate-pulse';
+                sideText.innerText = 'Cloud Sync: ON';
+                return;
+            }
+             statusText.innerHTML = '<span class="text-amber-400">⚠ Mesin Python belum aktif</span>';
+             nextText.innerText = 'Jalankan start_radar_silent.vbs untuk menyalakan bot.';
+             btnScan.disabled = true;
+             btnScan.classList.add('opacity-50', 'cursor-not-allowed');
+             sideDot.className = 'w-2 h-2 rounded-full bg-red-500';
+             sideText.innerText = 'Bot Offline';
+             return;
+        }
+
+
+        if (botStateUI.is_scanning) {
+            statusText.innerHTML = '<span class="text-emerald-400">● Sedang memindai Jobstreet & Glints...</span>';
+            btnScan.disabled = true;
+            btnScan.classList.add('opacity-60', 'cursor-not-allowed');
+            sideDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+            sideText.innerText = 'Memindai Loker...';
+        } else {
+            btnScan.disabled = !isNyala;
+            btnScan.classList.toggle('opacity-50', !isNyala);
+            btnScan.classList.toggle('cursor-not-allowed', !isNyala);
+
+            const teksBersih = (botStateUI.last_result || '').includes('Di luar jam kerja')
+                ? ''
+                : (botStateUI.last_result || '');
+
+            if (!isNyala) {
+                statusText.innerHTML = '<span class="text-amber-300">Mode Laptop Mati (Segera Hadir)</span>';
+                nextText.innerText = 'Fitur sedang dikembangkan • Bot laptop dijeda.';
+                sideDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                sideText.innerText = 'Laptop Mati (Dev)';
+            } else if (botStateUI.auto_run) {
+                statusText.innerText = teksBersih;
+                statusText.classList.toggle('hidden', !teksBersih);
+                nextText.innerText = `Terakhir: ${botStateUI.last_scan_at || '-'} • Berikutnya: ${botStateUI.next_run_at || '-'}`;
+                sideDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+                sideText.innerText = 'Laptop Nyala: ON';
+            } else {
+                statusText.innerText = teksBersih || 'Auto-Loop dijeda';
+                nextText.innerText = `Terakhir: ${botStateUI.last_scan_at || '-'} • Auto-Loop OFF`;
+                sideDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                sideText.innerText = 'Auto-Loop: OFF';
+            }
+        }
+    }
+
+    async function pollBotStatus() {
+        try {
+            const res = await fetch(`${BOT_API_BASE}/api/status`, { cache: 'no-store' });
+            if (!res.ok) throw new Error('offline');
+            const data = await res.json();
+
+            botStateUI = {
+                online: true,
+                mode: data.mode || 'laptop_nyala',
+                auto_run: Boolean(data.auto_run),
+                is_scanning: Boolean(data.is_scanning),
+                last_scan_at: data.last_scan_at || '-',
+                next_run_at: data.next_run_at || '-',
+                last_result: data.last_result || 'Siap'
+            };
+
+            renderSaklarUI();
+
+            if (prevBotScanning && !botStateUI.is_scanning) {
+                loadLokerFeed(true);
+            }
+            prevBotScanning = botStateUI.is_scanning;
+        } catch {
+            botStateUI.online = false;
+            botStateUI.is_scanning = false;
+            renderSaklarUI();
+        }
+    }
+
+    function toggleSaklarMode() {
+        const target = botStateUI.mode === 'laptop_nyala' ? 'laptop_mati' : 'laptop_nyala';
+        setSaklarMode(target);
+    }
+
+    async function setSaklarMode(mode) {
+        botStateUI.mode = mode;
+
+        if (mode === 'laptop_mati') {
+            botStateUI.auto_run = false;
+            renderSaklarUI();
+            showToast('Mode Laptop Mati: Fitur sedang dikembangkan.', 'info');
+        } else {
+            botStateUI.auto_run = true;
+            renderSaklarUI();
+            showToast('Mode Laptop Nyala aktif (Auto-Loop ON).', 'success');
+        }
+
+        if (!botStateUI.online) return;
+
+        try {
+            const res = await fetch(`${BOT_API_BASE}/api/mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                botStateUI.mode = data.mode;
+                botStateUI.auto_run = Boolean(data.auto_run);
+                botStateUI.last_result = data.last_result;
+                renderSaklarUI();
+            }
+        } catch {}
+    }
+
+    async function toggleAutoLoop() {
+        if (botStateUI.mode !== 'laptop_nyala') return;
+        if (!botStateUI.online) {
+            showToast('Jalankan start_radar_silent.vbs terlebih dahulu.', 'warning');
+            return;
+        }
+        try {
+            const res = await fetch(`${BOT_API_BASE}/api/toggle`, { method: 'POST' });
+            const data = await res.json();
+            botStateUI.auto_run = Boolean(data.auto_run);
+            botStateUI.last_result = data.last_result;
+            renderSaklarUI();
+            showToast(botStateUI.auto_run ? 'Auto-Loop ON: bot jalan terus tiap 10–15 menit.' : 'Auto-Loop OFF: bot dijeda.', 'info');
+        } catch {
+            showToast('Gagal menghubungi mesin Python.', 'error');
+        }
+    }
+
+    async function triggerScanNow() {
+        if (!botStateUI.online) {
+            showToast('Jalankan start_radar_silent.vbs terlebih dahulu.', 'warning');
+            return;
+        }
+        try {
+            await fetch(`${BOT_API_BASE}/api/scan-now`, { method: 'POST' });
+            showToast('Memindai loker Jobstreet & Glints sekarang...', 'info');
+            setTimeout(pollBotStatus, 400);
+        } catch {
+            showToast('Gagal menghubungi mesin Python.', 'error');
+        }
+    }
+
+    // ================= SISTEM TAB MENU =================
+function switchTab(viewId, radarSource = null) {
+        currentTab = viewId;
+        if (radarSource) activeRadarSource = radarSource;
+
+        ['view-dashboard', 'view-radar', 'view-tracker', 'view-database'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(viewId).classList.remove('hidden');
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove(
+                'bg-brand-accent/10', 'text-brand-accent', 'border-brand-accent/20',
+                'bg-amber-500/10', 'text-amber-400', 'border-amber-500/20'
+            );
+            btn.classList.add('text-brand-textMuted', 'border-transparent');
+        });
+
+        let activeBtnId = 'nav-dashboard';
+        if (viewId === 'view-database') activeBtnId = 'nav-database';
+        else if (viewId === 'view-tracker') activeBtnId = 'nav-tracker';
+        else if (viewId === 'view-radar') {
+            activeBtnId = activeRadarSource === 'Glints' ? 'nav-radar-glints' : 'nav-radar-jobstreet';
+        }
+
+        const activeBtn = document.getElementById(activeBtnId);
+        if (activeBtn) {
+            activeBtn.classList.remove('text-brand-textMuted', 'border-transparent');
+            if (activeBtnId === 'nav-radar-glints') {
+                activeBtn.classList.add('bg-amber-500/10', 'text-amber-400', 'border-amber-500/20');
+            } else {
+                activeBtn.classList.add('bg-brand-accent/10', 'text-brand-accent', 'border-brand-accent/20');
+            }
+        }
+
+        if (viewId === 'view-radar') {
+            updateRadarHeaderUI();
+
+            const readKeys = getReadBatchKeys();
+            sessionUnreadKeys = new Set();
+            cachedRadarBatches.forEach(b => {
+                if (b.source === activeRadarSource && !readKeys.has(b._key)) {
+                    sessionUnreadKeys.add(b._key);
+                }
+            });
+
+            markSourceAsRead(cachedRadarBatches, activeRadarSource);
+            updateAllUnreadBadges();
+            renderRadarFeed();
+            loadLokerFeed(true);
+            if (IS_LOCAL_ENV) pollBotStatus();
+
+            setTimeout(() => {
+                const container = document.getElementById('radarFeedContainer');
+                if (container) container.scrollTop = container.scrollHeight;
+            }, 80);
+        } else {
+            sessionUnreadKeys.clear();
+        }
+
+	if (viewId === 'view-tracker') {
+            renderTrackerView();
+        }
+        if (window.innerWidth < 768) applySidebarState(true); 
+    }
+
+    function applyRadarBatches(rawBatches, silent, sourceLabel) {
+        const batches = normalizeBatches(rawBatches);
+        const prevKeys = new Set(cachedRadarBatches.map(b => b._key));
+        const readKeys = getReadBatchKeys();
+
+        const newlyArrivedSources = new Set();
+        batches.forEach(b => {
+            if (!readKeys.has(b._key) && cachedRadarBatches.length > 0 && !prevKeys.has(b._key)) {
+                newlyArrivedSources.add(b.source);
+            }
+        });
+
+        cachedRadarBatches = batches;
+
+        if (currentTab === 'view-radar') {
+            let adaBaruDiTabAktif = false;
+            batches.forEach(b => {
+                if (b.source === activeRadarSource && !readKeys.has(b._key)) {
+                    sessionUnreadKeys.add(b._key);
+                    adaBaruDiTabAktif = true;
+                }
+            });
+            if (adaBaruDiTabAktif) markSourceAsRead(batches, activeRadarSource);
+        }
+
+        updateAllUnreadBadges();
+        renderRadarFeed();
+
+        const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const statusEl = document.getElementById('radarLastSync');
+        if (statusEl) statusEl.innerText = `Terhubung dengan ${sourceLabel} • Sinkron terakhir: ${nowStr} WIB`;
+
+        if (newlyArrivedSources.size > 0) {
+            showToast(`New Message [${Array.from(newlyArrivedSources).join(' & ')}]: Loker baru masuk!`, 'success');
+        } else if (!silent) {
+            const countAktif = batches.filter(b => b.source === activeRadarSource).length;
+            showToast(`Feed ${activeRadarSource} diperbarui (${countAktif} bubble).`, 'success');
+        }
+    }
+
+    async function loadLokerFeed(silent = false) {
+        // Prioritas 1: Baca langsung dari Supabase Cloud (jalan di HP & Laptop)
+        if (supabaseClient && currentCloudUser) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('loker_batches')
+                    .select('batch_id, source, waktu, items')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+                applyRadarBatches((data || []).reverse(), silent, 'Supabase Cloud');
+                return;
+            } catch (err) {
+                console.error('Supabase feed error:', err);
+                if (!IS_LOCAL_ENV) {
+                    if (!silent) showToast(`Gagal muat feed cloud: ${err.message}`, 'error');
+                    return;
+                }
+            }
+        }
+
+        // Fallback Lokal: baca loker_feed.js
+        const oldScript = document.getElementById('loker-feed-script');
+        if (oldScript) oldScript.remove();
+
+        const script = document.createElement('script');
+        script.id = 'loker-feed-script';
+        script.src = 'loker_feed.js?t=' + Date.now();
+        script.onload = () => applyRadarBatches(Array.isArray(window.GENTA_LOKER_FEED) ? window.GENTA_LOKER_FEED : [], silent, 'loker_feed.js');
+        script.onerror = () => {
+            cachedRadarBatches = [];
+            updateAllUnreadBadges();
+            renderRadarFeed();
+        };
+        document.body.appendChild(script);
+    }
+
+    function renderRadarFeed() {
+        const container = document.getElementById('radarFeedContainer');
+        if (!container) return;
+
+        const filtered = cachedRadarBatches
+            .map((batch, origIdx) => ({ batch, origIdx }))
+            .filter(entry => entry.batch.source === activeRadarSource);
+
+        const isGlints = activeRadarSource === 'Glints';
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="my-auto text-center py-16 px-6">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center ${isGlints ? 'text-amber-400/70' : 'text-sky-400/70'} mx-auto mb-4">
+                        <i class="ph-fill ${isGlints ? 'ph-lightning' : 'ph-broadcast'} text-3xl"></i>
+                    </div>
+                    <h3 class="text-white font-bold text-lg mb-2">Belum Ada Loker ${escapeHtml(activeRadarSource)}</h3>
+                    <p class="text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+                        Pastikan saklar di kiri (<strong>Laptop Nyala</strong>) aktif lalu klik <strong>Scan Sekarang</strong> atau tunggu siklus otomatis. Loker Fresh Graduate (0–1 thn) dari ${escapeHtml(activeRadarSource)} akan muncul khusus di subbab ini.
+                    </p>
+                </div>
+            `;
+            return;
+        }
+
+        let dividerShown = false;
+        const unreadBatchTotal = filtered.filter(e => sessionUnreadKeys.has(e.batch._key)).length;
+
+        const accentDividerLine = isGlints ? 'bg-amber-500/35' : 'bg-sky-500/35';
+        const accentDividerPill = isGlints
+            ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
+            : 'bg-sky-500/15 text-sky-300 border-sky-500/35';
+        const avatarGrad = isGlints
+            ? 'from-amber-400 to-orange-500'
+            : 'from-sky-400 to-cyan-500';
+        const avatarIcon = isGlints ? 'ph-lightning' : 'ph-broadcast';
+        const headerColor = isGlints ? 'text-amber-400' : 'text-sky-400';
+        const newBadgeColor = isGlints ? 'bg-amber-400 text-slate-950' : 'bg-sky-400 text-slate-950';
+        const newRingClass = isGlints
+            ? 'border-amber-500/50 ring-1 ring-amber-500/20'
+            : 'border-sky-500/50 ring-1 ring-sky-500/20';
+
+        container.innerHTML = filtered.map(({ batch, origIdx }) => {
+            const isNew = sessionUnreadKeys.has(batch._key);
+            let dividerHtml = '';
+
+            if (isNew && !dividerShown) {
+                dividerShown = true;
+                dividerHtml = `
+                    <div class="flex items-center gap-3 my-1">
+                        <div class="flex-1 h-px ${accentDividerLine}"></div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider border px-3 py-1 rounded-full ${accentDividerPill}">
+                            ${unreadBatchTotal} New Message
+                        </span>
+                        <div class="flex-1 h-px ${accentDividerLine}"></div>
+                    </div>
+                `;
+            }
+
+            const items = batch.items || [];
+            const itemsHtml = items.map((item, iIdx) => `
+                <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-4 hover:border-brand-accent/60 transition-colors">
+                    <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div>
+                            <h4 class="font-bold text-white text-sm">${iIdx + 1}. ${escapeHtml(item.posisi)}</h4>
+                            <p class="text-xs ${isGlints ? 'text-amber-300' : 'text-sky-400'} font-medium mt-0.5">🏢 ${escapeHtml(item.perusahaan)}</p>
+                        </div>
+                        <span class="text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-medium">
+                            💰 ${escapeHtml(item.salary)}
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-300 space-y-1 mb-3">
+                        <p>📍 ${escapeHtml(item.location)}</p>
+                        <p class="text-slate-400">💡 ${escapeHtml(item.alasan_singkat)}</p>
+                    </div>
+			<div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
+                        <button onclick="pakaiLokerKeDashboard(${origIdx}, ${iIdx})" class="bg-brand-accent hover:bg-brand-accentHover text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+                            <i class="ph-fill ph-lightning"></i> Pakai ke Generator CV
+                        </button>
+                        <a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+                            <i class="ph ph-arrow-square-out"></i> Buka ${escapeHtml(activeRadarSource)}
+                        </a>
+                        ${isJobTracked(item)
+                            ? `<button onclick="switchTab('view-tracker')" class="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"><i class="ph-fill ph-check-circle"></i> Sudah Dilamar</button>`
+                            : `<button onclick="tandaiSudahDilamar(${origIdx}, ${iIdx})" class="bg-slate-800 hover:bg-emerald-600/20 hover:border-emerald-500/50 hover:text-emerald-300 text-slate-200 border border-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"><i class="ph ph-check-square"></i> Tandai Sudah Dilamar</button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+
+            const bubbleBorder = isNew ? newRingClass : 'border-brand-border';
+
+            return `
+                ${dividerHtml}
+                <div class="flex gap-3 items-start animate-slide-up">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-br ${avatarGrad} flex-shrink-0 flex items-center justify-center text-slate-950 shadow-lg mt-1">
+                        <i class="ph-fill ${avatarIcon} text-lg"></i>
+                    </div>
+                    <div class="flex-1 bg-brand-surface border ${bubbleBorder} rounded-2xl rounded-tl-none p-5 shadow-xl">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-700/80">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold ${headerColor} tracking-wide uppercase">${isGlints ? '⚡' : '🔵'} Loker ${escapeHtml(activeRadarSource)} Terbaru (0–1 Thn)</span>
+                                ${isNew ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${newBadgeColor}">NEW</span>` : ''}
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-mono">🕒 ${escapeHtml(batch.waktu)} • ${items.length} loker</span>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.scrollTop = container.scrollHeight;
+    }
+
+    	function pakaiLokerKeDashboard(origBatchIdx, itemIdx) {
+        const batch = cachedRadarBatches[origBatchIdx];
+        const item = batch?.items?.[itemIdx];
+        if (!item) return;
+
+        document.getElementById('jobTitleInput').value = item.posisi || '';
+        document.getElementById('companyNameInput').value = item.perusahaan || '';
+        document.getElementById('jobSpecInput').value = item.jobdesc || `${item.posisi} - ${item.perusahaan}\nLokasi: ${item.location}\nGaji: ${item.salary}\nCatatan: ${item.alasan_singkat}`;
+
+        activeJobMeta = {
+            posisi: item.posisi || '',
+            perusahaan: item.perusahaan || '',
+            portal: batch.source || 'Lainnya',
+            link: item.link || ''
+        };
+
+        switchTab('view-dashboard');
+        showToast(`Loker "${item.posisi}" (${batch.source}) siap dianalisis & dibuatkan CV!`, 'success');
+    }
+
+    // ================= TAHAP 1: MASTER DATABASE PORTOFOLIO + BACKUP JSON =================
+    const DB_NAME = 'KarirGentaFileDB';
+    const DB_STORE = 'templates';
+
+    function openTemplateDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(DB_STORE)) {
+                    db.createObjectStore(DB_STORE);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function saveDocxRecordToIndexedDB(record) {
+        const db = await openTemplateDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(DB_STORE, 'readwrite');
+            tx.objectStore(DB_STORE).put(record, 'cv_template');
+            tx.oncomplete = () => resolve(record.name);
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    async function saveDocxToIndexedDB(file) {
+        const buffer = await file.arrayBuffer();
+        return saveDocxRecordToIndexedDB({
+            name: file.name,
+            type: file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            buffer: buffer,
+            updatedAt: new Date().toISOString()
+        });
+    }
+
+    async function getDocxFromIndexedDB() {
+        const db = await openTemplateDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(DB_STORE, 'readonly');
+            const req = tx.objectStore(DB_STORE).get('cv_template');
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    function addProjectField(data = { title: '', year: '', desc: '', result: '' }) {
+        const container = document.getElementById('project-container');
+        const div = document.createElement('div');
+        div.className = 'project-item bg-slate-900 border border-slate-700 p-6 rounded-xl relative group';
+        div.innerHTML = `
+            <button onclick="this.parentElement.remove(); markDatabaseDirty();" class="absolute top-4 right-4 text-slate-500 hover:text-red-500 hidden group-hover:block transition-colors">
+                <i class="ph-fill ph-trash text-xl"></i>
+            </button>
+            <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="col-span-3">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Judul Proyek</label>
+                    <input type="text" value="${escapeHtml(data.title)}" placeholder="Contoh: ZVS Inverter 50-100kHz" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent">
+                </div>
+                <div class="col-span-1">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Tahun</label>
+                    <input type="text" value="${escapeHtml(data.year)}" placeholder="2025" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5">Deskripsi & Tujuan</label>
+                <textarea placeholder="Merancang rangkaian phase-shift zero-voltage switching pakai mikrokontroler STM32F1..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent resize-y h-20">${escapeHtml(data.desc)}</textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5">Hasil yang Dicapai / Spesifikasi</label>
+                <textarea placeholder="Efisiensi daya mencapai X%, desain layout PCB custom selesai, dll." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white outline-none focus:border-brand-accent resize-y h-20">${escapeHtml(data.result)}</textarea>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function addLinkField(data = { label: '', url: '' }) {
+        const container = document.getElementById('link-container');
+        const div = document.createElement('div');
+        div.className = 'link-item flex gap-4 items-center bg-slate-900 border border-slate-700 p-4 rounded-xl group relative';
+        div.innerHTML = `
+            <i class="ph-fill ph-link text-xl text-slate-500"></i>
+            <div class="flex-1 grid grid-cols-2 gap-4">
+                <input type="text" value="${escapeHtml(data.label)}" placeholder="Deskripsi Singkat (Misal: PPT Smart Elevator)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent">
+                <input type="text" value="${escapeHtml(data.url)}" placeholder="https://drive.google.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none focus:border-brand-accent font-mono">
+            </div>
+            <button onclick="this.parentElement.remove(); markDatabaseDirty();" class="text-slate-500 hover:text-red-500 transition-colors px-2">
+                <i class="ph-fill ph-x-circle text-xl"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    }
+
+    function collectCurrentDatabaseForm() {
+        const projects = [];
+        document.querySelectorAll('#project-container .project-item').forEach(item => {
+            const inputs = item.querySelectorAll('input');
+            const textareas = item.querySelectorAll('textarea');
+            const title = inputs[0]?.value.trim() || '';
+            const year = inputs[1]?.value.trim() || '';
+            const desc = textareas[0]?.value.trim() || '';
+            const result = textareas[1]?.value.trim() || '';
+
+            if (title || desc || result) {
+                projects.push({ title, year, desc, result });
+            }
+        });
+
+        const links = [];
+        document.querySelectorAll('#link-container .link-item').forEach(item => {
+            const inputs = item.querySelectorAll('input');
+            const label = inputs[0]?.value.trim() || '';
+            const url = inputs[1]?.value.trim() || '';
+
+            if (label || url) {
+                links.push({ label, url });
+            }
+        });
+
+        return { projects, links };
+    }
+
+    async function saveDatabase(silent = false) {
+        const { projects, links } = collectCurrentDatabaseForm();
+        localStorage.setItem('gentaMasterDB', JSON.stringify({ projects, links }));
+
+        const docxInput = document.getElementById('docxTemplateInput');
+        const uploadedDocxFile = docxInput?.files?.[0] || null;
+        if (docxInput && docxInput.files.length > 0) {
+            try {
+                const savedName = await saveDocxToIndexedDB(docxInput.files[0]);
+                updateDocxStatusUI(savedName);
+                docxInput.value = '';
+            } catch (err) {
+                console.error(err);
+                showToast('Gagal menyimpan template .docx ke IndexedDB.', 'error');
+                return false;
+            }
+        }
+
+        clearDatabaseDirty();
+        if (!silent) {
+            showToast(`Database tersimpan! (${projects.length} proyek, ${links.length} link)`, 'success');
+        }
+        syncUserStateToCloud(uploadedDocxFile);
+        return true;
+    }
+
+    async function exportBackupJSON() {
+        try {
+            // Simpan dulu kondisi form terbaru agar backup selalu sinkron
+            await saveDatabase(true);
+
+            const masterDB = JSON.parse(localStorage.getItem('gentaMasterDB') || '{"projects":[],"links":[]}');
+            const toneCV = localStorage.getItem('gentaToneCV') || '';
+            const toneCover = localStorage.getItem('gentaToneCover') || '';
+            const aiSettings = getAiSettings();
+            const templateRecord = await getDocxFromIndexedDB().catch(() => null);
+
+            const payload = {
+                app: 'Karir Genta',
+                version: '1.1',
+                exportedAt: new Date().toISOString(),
+                masterDB,
+                toneCV,
+                toneCover,
+                aiSettings,
+                tracker: getTrackerList(),
+                cvTemplate: templateRecord && templateRecord.buffer ? {
+                    name: templateRecord.name,
+                    type: templateRecord.type,
+                    updatedAt: templateRecord.updatedAt,
+                    base64: arrayBufferToBase64(templateRecord.buffer)
+                } : null
+            };
+
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+            const tgl = new Date().toISOString().slice(0, 10);
+            saveAs(blob, `Backup_KarirGenta_${tgl}.json`);
+            showToast(`Backup berhasil diunduh (${masterDB.projects.length} proyek${payload.cvTemplate ? ' + template .docx' : ''}).`, 'success');
+        } catch (err) {
+            console.error('Export Backup Error:', err);
+            showToast(`Gagal membuat backup: ${err.message}`, 'error');
+        }
+    }
+
+    async function importBackupJSON(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+
+            if (!parsed || typeof parsed !== 'object' || !parsed.masterDB) {
+                throw new Error('Format file bukan backup Karir Genta yang valid.');
+            }
+
+            localStorage.setItem('gentaMasterDB', JSON.stringify({
+                projects: Array.isArray(parsed.masterDB.projects) ? parsed.masterDB.projects : [],
+                links: Array.isArray(parsed.masterDB.links) ? parsed.masterDB.links : []
+            }));
+
+            if (typeof parsed.toneCV === 'string' && parsed.toneCV.trim()) {
+                localStorage.setItem('gentaToneCV', parsed.toneCV);
+            }
+            if (typeof parsed.toneCover === 'string' && parsed.toneCover.trim()) {
+                localStorage.setItem('gentaToneCover', parsed.toneCover);
+            }
+            if (parsed.aiSettings && typeof parsed.aiSettings === 'object') {
+                localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({
+                    modelAnalisis: parsed.aiSettings.modelAnalisis || DEFAULT_AI_SETTINGS.modelAnalisis,
+                    modelChat: parsed.aiSettings.modelChat || DEFAULT_AI_SETTINGS.modelChat,
+                    enableThinking: Boolean(parsed.aiSettings.enableThinking)
+                }));
+                updateSidebarModelLabel();
+            }
+
+            let restoredDocxFile = null;
+            if (parsed.cvTemplate && parsed.cvTemplate.base64) {
+                const restoredBuf = base64ToArrayBuffer(parsed.cvTemplate.base64);
+                const restoredName = parsed.cvTemplate.name || 'Template_CV_Restored.docx';
+                const restoredType = parsed.cvTemplate.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                await saveDocxRecordToIndexedDB({
+                    name: restoredName,
+                    type: restoredType,
+                    buffer: restoredBuf,
+                    updatedAt: parsed.cvTemplate.updatedAt || new Date().toISOString()
+                });
+                restoredDocxFile = new File([restoredBuf], restoredName, { type: restoredType });
+            }
+	    if (Array.isArray(parsed.tracker)) {
+                saveTrackerList(parsed.tracker);
+                updateTrackerSidebarBadge();
+                if (currentTab === 'view-tracker') renderTrackerView();
+            }
+
+            await loadDatabase();
+            refreshReferenceStatusUIs();
+            clearDatabaseDirty();
+            clearTimeout(cloudSyncTimer);
+            await syncUserStateToCloud(restoredDocxFile);
+            showToast('Backup berhasil dipulihkan ke browser ini!', 'success');
+        } catch (err) {
+            console.error('Import Backup Error:', err);
+            showToast(`Gagal import backup: ${err.message}`, 'error');
+        } finally {
+            event.target.value = '';
+        }
+    }
+
+    function updateDocxStatusUI(fileName) {
+        const statusEl = document.getElementById('docxTemplateStatus');
+        if (statusEl) {
+            statusEl.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Tersimpan: ${escapeHtml(fileName)}</span>`;
+        }
+    }
+
+    async function loadDatabase() {
+        const rawDB = localStorage.getItem('gentaMasterDB');
+        if (rawDB) {
+            try {
+                const parsed = JSON.parse(rawDB);
+                if (parsed.projects && parsed.projects.length > 0) {
+                    const projContainer = document.getElementById('project-container');
+                    projContainer.innerHTML = '';
+                    parsed.projects.forEach(p => addProjectField(p));
+                }
+                if (parsed.links && parsed.links.length > 0) {
+                    const linkContainer = document.getElementById('link-container');
+                    linkContainer.innerHTML = '';
+                    parsed.links.forEach(l => addLinkField(l));
+                }
+            } catch (e) {
+                console.error('Error parsing gentaMasterDB:', e);
+            }
+        }
+
+        const savedTemplate = await getDocxFromIndexedDB().catch(() => null);
+        if (savedTemplate && savedTemplate.name) {
+            updateDocxStatusUI(savedTemplate.name);
+        }
+    }
+
+    function getDatabaseContext() {
+        const rawDB = localStorage.getItem('gentaMasterDB');
+        if (!rawDB) return 'Belum ada data proyek di Master Database.';
+
+        const { projects = [], links = [] } = JSON.parse(rawDB);
+        let contextText = '[DATABASE PROYEK ASLI GENTA]\n';
+        
+        if (projects.length === 0) {
+            contextText += '- Belum ada proyek tercatat.\n';
+        } else {
+            projects.forEach((p, idx) => {
+                contextText += `${idx + 1}. ${p.title} (${p.year}): ${p.desc} | Hasil: ${p.result}\n`;
+            });
+        }
+
+        if (links.length > 0) {
+            contextText += '\n[LINK PORTOFOLIO G-DRIVE]\n';
+            links.forEach(l => {
+                contextText += `- ${l.label}: ${l.url}\n`;
+            });
+        }
+
+        return contextText;
+    }
+
+    // ================= TAHAP 2: EKSTRAKSI GAYA BAHASA =================
+    async function extractTextFromFile(file) {
+        const fileName = file.name.toLowerCase();
+        const arrayBuffer = await file.arrayBuffer();
+
+        if (fileName.endsWith('.docx')) {
+            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            return result.value;
+        } else if (fileName.endsWith('.pdf')) {
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+            }
+            return fullText;
+        } else {
+            throw new Error('Format file tidak didukung. Gunakan .pdf atau .docx');
+        }
+    }
+
+    async function analyzeToneOfVoice(rawText, docType) {
+        const apiKey = document.getElementById('globalApiKey').value.trim();
+        if (!apiKey) {
+            showToast('Masukkan Gemini API Key terlebih dahulu sebelum upload referensi!', 'warning');
+            return null;
+        }
+
+        const { modelChat } = getAiSettings();
+        const trimmedText = rawText.slice(0, 6000);
+        const prompt = `
+Analisis gaya penulisan dari dokumen ${docType} milik Genta Arya Kusuma berikut ini.
+Rangkum menjadi panduan gaya bahasa (Tone of Voice) maksimal 120 kata yang mencakup:
+1. Struktur kalimat dan tingkat formalitas.
+2. Pilihan kata kerja aktif (action verbs) atau istilah teknis yang sering dipakai.
+3. Ciri khas penyampaian pencapaian.
+
+Teks Dokumen:
+${trimmedText}`;
+
+        const response = await fetch(`${GEMINI_API_BASE}/${modelChat}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.3 }
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP Error ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text.trim();
+    }
+
+    function getReferenceConfigs() {
+        return [
+            { input: document.getElementById('refCvInput'), storageKey: 'gentaToneCV', label: 'Referensi CV' },
+            { input: document.getElementById('refCoverInput'), storageKey: 'gentaToneCover', label: 'Surat Lamaran' }
+        ];
+    }
+
+    function refreshReferenceStatusUIs() {
+        getReferenceConfigs().forEach(cfg => {
+            if (!cfg.input) return;
+            const existingSummary = localStorage.getItem(cfg.storageKey);
+            if (existingSummary) {
+                updateRefStatusUI(cfg.input, `${cfg.label} Teranalisis ✓`);
+            }
+        });
+    }
+
+    function initReferenceUploaders() {
+        refreshReferenceStatusUIs();
+
+        getReferenceConfigs().forEach(cfg => {
+            if (!cfg.input) return;
+
+            cfg.input.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                updateRefStatusUI(cfg.input, 'Membaca & menganalisis gaya bahasa...', true);
+                try {
+                    const rawText = await extractTextFromFile(file);
+                    if (rawText.trim().length < 30) {
+                        throw new Error('Teks dalam file terlalu sedikit atau berupa gambar scan.');
+                    }
+
+                    const toneSummary = await analyzeToneOfVoice(rawText, cfg.label);
+                    if (toneSummary) {
+                        localStorage.setItem(cfg.storageKey, toneSummary);
+                        scheduleCloudSync();
+                        updateRefStatusUI(cfg.input, `✓ ${cfg.label} Teranalisis (${file.name})`);
+                        showToast(`Gaya bahasa ${cfg.label} berhasil dipelajari AI!`, 'success');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    updateRefStatusUI(cfg.input, `Gagal: ${err.message}`, false, true);
+                    showToast(`Gagal memproses ${cfg.label}: ${err.message}`, 'error');
+                }
+            });
+        });
+    }
+
+    function updateRefStatusUI(inputEl, message, isLoading = false, isError = false) {
+        let statusTag = inputEl.parentElement.querySelector('.ref-status');
+        if (!statusTag) {
+            statusTag = document.createElement('p');
+            statusTag.className = 'ref-status text-xs mt-2 font-medium';
+            inputEl.parentElement.appendChild(statusTag);
+        }
+        statusTag.className = `ref-status text-xs mt-2 font-medium ${
+            isError ? 'text-red-400' : isLoading ? 'text-yellow-400' : 'text-emerald-400'
+        }`;
+        statusTag.innerText = message;
+    }
+
+    function getToneContext() {
+        const toneCV = localStorage.getItem('gentaToneCV');
+        const toneCover = localStorage.getItem('gentaToneCover');
+        if (!toneCV && !toneCover) return '';
+
+        let text = '\n[GAYA BAHASA & TONE OF VOICE GENTA]\n';
+        if (toneCV) text += `- Gaya Penulisan CV: ${toneCV}\n`;
+        if (toneCover) text += `- Gaya Surat Lamaran: ${toneCover}\n`;
+        return text;
+    }
+
+    // ================= UTILITIES & ANALISIS =================
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-msg');
+        const toastIcon = document.getElementById('toast-icon');
+        toastMsg.innerText = message;
+        if (type === 'warning') toastIcon.className = 'ph-fill ph-warning-circle text-xl text-yellow-500';
+        else if (type === 'error') toastIcon.className = 'ph-fill ph-x-circle text-xl text-red-500';
+        else if (type === 'success') toastIcon.className = 'ph-fill ph-check-circle text-xl text-green-500';
+        else toastIcon.className = 'ph-fill ph-info text-xl text-brand-accent';
+        toast.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
+        toast.classList.add('opacity-100', 'translate-y-0');
+        setTimeout(() => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
+        }, 4000);
+    }
+
+    function selectRole(element, roleName) {
+        document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
+        if (element) element.classList.add('selected');
+        selectedRole = roleName;
+    }
+
+    function openChatWindow() {
+        const chatWindow = document.getElementById('chatWindow');
+        const toggleBtnIcon = document.querySelector('#chatToggleBtn i');
+        if (chatWindow.classList.contains('hidden')) {
+            chatWindow.classList.remove('hidden');
+            toggleBtnIcon.classList.replace('ph-chat-teardrop-dots', 'ph-x');
+        }
+    }
+
+    function getCurrentJobContext() {
+        const jobTitle = document.getElementById('jobTitleInput')?.value.trim() || 'Belum diisi';
+        const companyName = document.getElementById('companyNameInput')?.value.trim() || 'Belum diisi';
+        const jobSpec = document.getElementById('jobSpecInput')?.value.trim() || 'Belum diisi';
+        return `Posisi: ${jobTitle} | Perusahaan: ${companyName} | Kategori Terpilih: ${selectedRole}\nDeskripsi Loker:\n${jobSpec}\n\n${getDatabaseContext()}${getToneContext()}`;
+    }
+
+    async function autoAnalyzeAndSelect() {
+        const apiKey = document.getElementById('globalApiKey').value.trim();
+        const jobTitle = document.getElementById('jobTitleInput').value.trim();
+        const companyName = document.getElementById('companyNameInput').value.trim();
+        const jobSpec = document.getElementById('jobSpecInput').value.trim();
+        const btnAnalyze = document.getElementById('btnAnalyze');
+
+        if (!apiKey || !jobTitle || !companyName || !jobSpec) {
+            showToast('Harap KETIK/ISI API Key, Posisi, Perusahaan, dan Deskripsi terlebih dahulu.', 'warning');
+            return;
+        }
+
+        const { modelAnalisis, enableThinking } = getAiSettings();
+        const originalBtnContent = btnAnalyze.innerHTML;
+        btnAnalyze.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i> Sedang Menganalisis...';
+        btnAnalyze.disabled = true;
+
+        const promptText = `
+Anda adalah AI penganalisis lowongan pekerjaan.
+Tugas Anda: Baca Posisi, Nama Perusahaan, dan Deskripsi Pekerjaan di bawah ini, lalu cocokkan dengan kategori portofolio.
+Posisi: ${jobTitle}
+Perusahaan: ${companyName}
+Deskripsi Loker: ${jobSpec}
+${getDatabaseContext()}
+`;
+
+        const responseSchema = {
+            type: "OBJECT",
+            properties: {
+                kategori_terpilih: { type: "STRING", enum: ["Power System", "Maintenance", "Automation", "RnD Embedded", "Testing Validation", "Generic"] },
+                skor_kecocokan: { type: "INTEGER" },
+                alasan_singkat: { type: "STRING" },
+                saran_strategi: { type: "STRING" }
+            },
+            required: ["kategori_terpilih", "skor_kecocokan", "alasan_singkat", "saran_strategi"]
+        };
+
+        const generationConfig = { responseMimeType: "application/json", responseSchema };
+        if (enableThinking) generationConfig.thinkingConfig = { thinkingLevel: "MEDIUM" };
+
+        try {
+            const response = await fetch(`${GEMINI_API_BASE}/${modelAnalisis}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `HTTP Error ${response.status}`);
+            }
+            const data = await response.json();
+            const jsonResult = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+
+            if (jsonResult.skor_kecocokan < 55) jsonResult.kategori_terpilih = "Generic";
+
+            const targetCard = document.querySelector(`[data-role="${jsonResult.kategori_terpilih}"]`);
+            if (targetCard) {
+                selectRole(targetCard, jsonResult.kategori_terpilih);
+                showToast(`Cocok: ${jsonResult.kategori_terpilih}! Skor: ${jsonResult.skor_kecocokan}%`, 'success');
+                openChatWindow();
+                const autoMsg = `**Analisis Loker: ${jobTitle} (${companyName})**\n\n🎯 **Portofolio:** ${jsonResult.kategori_terpilih} (${jsonResult.skor_kecocokan}%)\n💡 **Alasan:** ${jsonResult.alasan_singkat}\n\n📋 **Strategi Melamar:**\n${jsonResult.saran_strategi}`;
+                appendMessage(autoMsg, false);
+                chatHistory.push({ role: "model", parts: [{ text: autoMsg }] });
+            }
+        } catch (error) { showToast(`Gagal: ${error.message}`, 'error'); } 
+        finally { btnAnalyze.innerHTML = originalBtnContent; btnAnalyze.disabled = false; }
+    }
+
+    // ================= TAHAP 3: GENERATOR CV WORD (.DOCX) OTOMATIS =================
+// ================= TAHAP 3: PREVIEW & GENERATOR CV WORD (.DOCX) =================
+    let pendingCvMeta = { jobTitle: '', companyName: '', templateRecord: null };
+
+    function closeCvPreviewModal() {
+        document.getElementById('cvPreviewModal').classList.add('hidden');
+    }
+
+    async function generateCustomCV() {
+        const apiKey = document.getElementById('globalApiKey').value.trim();
+        const jobTitle = document.getElementById('jobTitleInput').value.trim();
+        const companyName = document.getElementById('companyNameInput').value.trim();
+        const jobSpec = document.getElementById('jobSpecInput').value.trim();
+        const btnGen = document.getElementById('btnGenerateCV');
+
+        if (!apiKey) return showToast('Masukkan Gemini API Key terlebih dahulu!', 'warning');
+        if (!jobTitle || !companyName || !jobSpec) return showToast('Isi Posisi, Perusahaan, dan Deskripsi Loker dulu!', 'warning');
+
+        const templateRecord = await getDocxFromIndexedDB().catch(() => null);
+        if (!templateRecord || !templateRecord.buffer) {
+            return showToast('Template CV (.docx) belum diunggah! Upload dulu di menu Database Portofolio.', 'warning');
+        }
+
+        const { modelAnalisis, enableThinking } = getAiSettings();
+        const originalBtnHTML = btnGen.innerHTML;
+        btnGen.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i> Meracik Konten CV...';
+        btnGen.disabled = true;
+
+        const promptText = `
+Anda adalah Senior Career Writer khusus Teknik Elektro & Otomasi Industri.
+Tugas Anda: Susun konten CV profesional untuk Genta Arya Kusuma yang disesuaikan 100% dengan lowongan kerja berikut.
+
+Target Lowongan:
+- Posisi: ${jobTitle}
+- Perusahaan: ${companyName}
+- Fokus Kategori Portofolio: ${selectedRole}
+- Deskripsi Loker:
+${jobSpec}
+
+Bahan Baku Asli & Gaya Bahasa Genta:
+${getDatabaseContext()}
+${getToneContext()}
+
+Aturan Penulisan:
+1. Gunakan data proyek asli Genta di atas (jangan mengarang pengalaman fiktif).
+2. Sesuaikan penekanan teknis dan kata kunci agar lolos ATS untuk posisi ${jobTitle}.
+3. Ikuti bahasa yang dipakai pada Deskripsi Loker.
+4. Balas HANYA dengan format JSON sesuai skema.`;
+
+        const cvSchema = {
+            type: "OBJECT",
+            properties: {
+                AI_RINGKASAN: { type: "STRING", description: "Ringkasan profil profesional 3-4 kalimat padat yang relevan dengan loker." },
+                AI_PENGALAMAN: { type: "STRING", description: "Daftar proyek & pengalaman teknis terpilih dengan bullet points (•) dan pencapaian terukur." },
+                AI_SKILL: { type: "STRING", description: "Daftar Hard Skills & Software yang paling relevan ATS, dipisahkan koma atau kategori." }
+            },
+            required: ["AI_RINGKASAN", "AI_PENGALAMAN", "AI_SKILL"]
+        };
+
+        const generationConfig = { responseMimeType: "application/json", responseSchema: cvSchema };
+        if (enableThinking) generationConfig.thinkingConfig = { thinkingLevel: "MEDIUM" };
+
+        try {
+            const response = await fetch(`${GEMINI_API_BASE}/${modelAnalisis}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `HTTP Error ${response.status}`);
+            }
+
+            const data = await response.json();
+            const rawText = data.candidates[0].content.parts[0].text;
+            const cvContent = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+
+            pendingCvMeta = { jobTitle, companyName, templateRecord };
+            document.getElementById('prevCvSubtitle').innerText = `Target: ${jobTitle} — ${companyName} (Template: ${templateRecord.name})`;
+            document.getElementById('prevAiRingkasan').value = cvContent.AI_RINGKASAN || '';
+            document.getElementById('prevAiPengalaman').value = cvContent.AI_PENGALAMAN || '';
+            document.getElementById('prevAiSkill').value = cvContent.AI_SKILL || '';
+            document.getElementById('cvPreviewModal').classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Error Generate CV:', error);
+            showToast(`Gagal Meracik CV: ${error.message}`, 'error');
+        } finally {
+            btnGen.innerHTML = originalBtnHTML;
+            btnGen.disabled = false;
+        }
+    }
+
+let pendingTrackJob = { posisi: '', perusahaan: '', link: '' };
+
+    function openAskTrackModal(posisi, perusahaan) {
+        const isSameFromRadar = normalizeJobKey(posisi, perusahaan) === normalizeJobKey(activeJobMeta.posisi, activeJobMeta.perusahaan);
+        const portalVal = isSameFromRadar ? activeJobMeta.portal : 'Lainnya';
+        const linkVal = isSameFromRadar ? activeJobMeta.link : '';
+
+        pendingTrackJob = { posisi, perusahaan, link: linkVal };
+        document.getElementById('askTrackPosisi').innerText = posisi;
+        document.getElementById('askTrackPerusahaan').innerText = '🏢 ' + perusahaan;
+
+        const portalSelect = document.getElementById('askTrackPortal');
+        if (portalSelect) portalSelect.value = portalVal;
+
+        document.getElementById('askTrackModal').classList.remove('hidden');
+    }
+
+    function closeAskTrackModal() {
+        document.getElementById('askTrackModal').classList.add('hidden');
+    }
+
+    function confirmSaveToTrackerFromCV() {
+        const { posisi, perusahaan, link } = pendingTrackJob;
+        if (!posisi || !perusahaan) return closeAskTrackModal();
+
+        const portal = document.getElementById('askTrackPortal')?.value || 'Lainnya';
+        const list = getTrackerList();
+        list.unshift({
+            id: 'app_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            posisi,
+            perusahaan,
+            portal,
+            link: link || '',
+            appliedDate: getTodayIsoDate(),
+            status: 'Dilamar',
+            nextDate: '',
+            nextAgenda: '',
+            notes: `CV disesuaikan (Profil: ${selectedRole})`
+        });
+
+        saveTrackerList(list);
+        updateTrackerSidebarBadge();
+        if (cachedRadarBatches.length > 0) renderRadarFeed();
+        closeAskTrackModal();
+        showToast(`"${posisi}" dicatat ke Tracker sebagai Dilamar!`, 'success');
+    }
+
+    function confirmDownloadCV() {
+        const { jobTitle, companyName, templateRecord } = pendingCvMeta;
+        if (!templateRecord || !templateRecord.buffer) {
+            return showToast('Data template tidak ditemukan, silakan racik ulang.', 'error');
+        }
+
+        try {
+            const zip = new PizZip(templateRecord.buffer.slice(0));
+            const doc = new window.docxtemplater(zip, {
+                paragraphLoop: true,
+                linebreaks: true,
+                delimiters: { start: '{{', end: '}}' }
+            });
+
+            doc.render({
+                AI_RINGKASAN: document.getElementById('prevAiRingkasan').value.trim(),
+                AI_PENGALAMAN: document.getElementById('prevAiPengalaman').value.trim(),
+                AI_SKILL: document.getElementById('prevAiSkill').value.trim(),
+                POSISI_TARGET: jobTitle,
+                NAMA_PERUSAHAAN: companyName
+            });
+
+            const outBlob = doc.getZip().generate({
+                type: "blob",
+                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            });
+
+            const safeCompany = companyName.replace(/[^a-zA-Z0-9]/g, '_');
+            const safeRole = jobTitle.replace(/[^a-zA-Z0-9]/g, '_');
+            saveAs(outBlob, `CV_Genta_${safeCompany}_${safeRole}.docx`);
+
+            closeCvPreviewModal();
+
+            // Tawarkan catat ke Tracker jika belum pernah tercatat
+            if (typeof isJobTracked === 'function' && !isJobTracked({ posisi: jobTitle, perusahaan: companyName, link: '' })) {
+                showToast('CV (.docx) berhasil dicetak & diunduh!', 'success');
+                openAskTrackModal(jobTitle, companyName);
+            } else {
+                showToast('CV (.docx) terunduh! Loker ini sudah ada di Tracker.', 'success');
+            }
+        } catch (error) {
+            console.error('Error Render Docx:', error);
+            if (error.properties && Array.isArray(error.properties.errors)) {
+                showToast('Tag {{...}} pada template Word rusak/terpecah XML. Ketik ulang tag secara utuh di Word.', 'error');
+            } else {
+                showToast(`Gagal Render Word: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    // ================= GENERATOR BODY EMAIL & COVER LETTER =================
+    function closeCoverLetterModal() {
+        document.getElementById('coverLetterModal').classList.add('hidden');
+    }
+
+    function copyFieldText(elementId, label) {
+        const el = document.getElementById(elementId);
+        if (!el || !el.value.trim()) return showToast(`${label} masih kosong.`, 'warning');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(el.value)
+                .then(() => showToast(`${label} berhasil disalin!`, 'success'))
+                .catch(() => { el.select(); document.execCommand('copy'); showToast(`${label} berhasil disalin!`, 'success'); });
+        } else {
+            el.select();
+            document.execCommand('copy');
+            showToast(`${label} berhasil disalin!`, 'success');
+        }
+    }
+
+    function openInGmailDraft() {
+        const su = encodeURIComponent(document.getElementById('coverSubjectInput').value.trim());
+        const body = encodeURIComponent(document.getElementById('coverBodyInput').value.trim());
+        window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${su}&body=${body}`, '_blank', 'noopener,noreferrer');
+    }
+
+    async function generateCoverLetter() {
+        const apiKey = document.getElementById('globalApiKey').value.trim();
+        const jobTitle = document.getElementById('jobTitleInput').value.trim();
+        const companyName = document.getElementById('companyNameInput').value.trim();
+        const jobSpec = document.getElementById('jobSpecInput').value.trim();
+        const btnCover = document.getElementById('btnGenerateCover');
+
+        if (!apiKey) return showToast('Masukkan Gemini API Key terlebih dahulu!', 'warning');
+        if (!jobTitle || !companyName || !jobSpec) return showToast('Isi Posisi, Perusahaan, dan Deskripsi Loker dulu!', 'warning');
+
+        const { modelAnalisis, enableThinking } = getAiSettings();
+        const hasToneCover = Boolean(localStorage.getItem('gentaToneCover'));
+        const originalBtnHTML = btnCover.innerHTML;
+        btnCover.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i> Meracik Email Lamaran...';
+        btnCover.disabled = true;
+
+        const promptText = `
+Anda adalah Senior Career Writer khusus Teknik Elektro & Otomasi Industri.
+Tugas Anda: Buat Subjek Email dan Body Email / Cover Letter lamaran kerja yang ringkas, meyakinkan, dan natural untuk Genta Arya Kusuma.
+
+Target Lowongan:
+- Posisi: ${jobTitle}
+- Perusahaan: ${companyName}
+- Fokus Portofolio: ${selectedRole}
+- Deskripsi Loker:
+${jobSpec}
+
+Bahan Baku Asli & Gaya Bahasa Genta:
+${getDatabaseContext()}
+${getToneContext()}
+
+Aturan Penulisan:
+1. Prioritaskan gaya bahasa dari "Gaya Surat Lamaran" di atas jika tersedia.
+2. Pilih maksimal 2 proyek asli Genta yang paling relevan dengan syarat loker (jangan mengarang pengalaman fiktif). Jika ada Link Portofolio G-Drive yang relevan, sertakan secara rapi.
+3. Panjang isi email padat dan enak dibaca HRD (sekitar 150-230 kata), lengkap dengan salam pembuka dan penutup atas nama Genta Arya Kusuma.
+4. Ikuti bahasa yang dipakai pada Deskripsi Loker (Indonesia jika loker berbahasa Indonesia, Inggris jika berbahasa Inggris).
+5. Balas HANYA dalam format JSON sesuai skema.`;
+
+        const coverSchema = {
+            type: "OBJECT",
+            properties: {
+                subjek_email: { type: "STRING", description: "Subjek email profesional siap kirim (misal: Lamaran Posisi - Nama Lengkap)." },
+                isi_email: { type: "STRING", description: "Isi lengkap body email / cover letter dengan paragraf yang rapi." }
+            },
+            required: ["subjek_email", "isi_email"]
+        };
+
+        const generationConfig = { responseMimeType: "application/json", responseSchema: coverSchema };
+        if (enableThinking) generationConfig.thinkingConfig = { thinkingLevel: "MEDIUM" };
+
+        try {
+            const response = await fetch(`${GEMINI_API_BASE}/${modelAnalisis}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `HTTP Error ${response.status}`);
+            }
+
+            const data = await response.json();
+            const rawText = data.candidates[0].content.parts[0].text;
+            const result = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+
+            const toneBadge = document.getElementById('coverToneBadge');
+            if (hasToneCover) {
+                toneBadge.innerText = '✓ Pakai Tone Surat Lamaran';
+                toneBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+            } else {
+                toneBadge.innerText = 'Gaya Profesional Standar';
+                toneBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+            }
+
+            document.getElementById('coverSubjectInput').value = result.subjek_email || '';
+            document.getElementById('coverBodyInput').value = result.isi_email || '';
+            document.getElementById('coverLetterModal').classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Error Cover Letter:', error);
+            showToast(`Gagal Membuat Email Lamaran: ${error.message}`, 'error');
+        } finally {
+            btnCover.innerHTML = originalBtnHTML;
+            btnCover.disabled = false;
+        }
+    }
+
+    // ================= FLOATING CHAT ASSISTANT =================
+    function toggleChat() {
+        const chatWindow = document.getElementById('chatWindow');
+        const toggleBtnIcon = document.querySelector('#chatToggleBtn i');
+        chatWindow.classList.toggle('hidden');
+        if (chatWindow.classList.contains('hidden')) toggleBtnIcon.classList.replace('ph-x', 'ph-chat-teardrop-dots');
+        else toggleBtnIcon.classList.replace('ph-chat-teardrop-dots', 'ph-x');
+    }
+
+    function handleChatEnter(event) { if (event.key === 'Enter') sendChatMessage(); }
+
+    function appendMessage(text, isUser, isError = false) {
+        const chatMessages = document.getElementById('chatMessages');
+        const msgDiv = document.createElement('div');
+        if (isUser) {
+            msgDiv.className = 'flex gap-3 max-w-[85%] self-end';
+            msgDiv.innerHTML = `<div class="bg-brand-accent text-white rounded-2xl rounded-tr-none p-3 shadow-md">${escapeHtml(text)}</div>`;
+        } else {
+            msgDiv.className = 'flex gap-3 max-w-[85%]';
+            const rawHtml = typeof marked !== 'undefined' ? marked.parse(text) : escapeHtml(text);
+            const safeHtml = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(rawHtml) : rawHtml;
+            const colorClass = isError ? 'text-red-400' : 'text-slate-200';
+            msgDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-brand-accent/20 flex-shrink-0 flex items-center justify-center text-brand-accent mt-1"><i class="ph-fill ph-robot text-xs"></i></div><div class="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-none p-3 ${colorClass} markdown-body">${safeHtml}</div>`;
+        }
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendLoading() {
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.insertAdjacentHTML('beforeend', `<div id="chatLoading" class="flex gap-3 max-w-[85%]"><div class="w-6 h-6 rounded-full bg-brand-accent/20 flex-shrink-0 flex items-center justify-center text-brand-accent mt-1"><i class="ph-fill ph-robot text-xs"></i></div><div class="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-none p-3 flex items-center gap-1"><span class="animate-bounce">•</span><span class="animate-bounce" style="animation-delay: 0.1s">•</span><span class="animate-bounce" style="animation-delay: 0.2s">•</span></div></div>`);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeLoading() { const loadDiv = document.getElementById('chatLoading'); if (loadDiv) loadDiv.remove(); }
+
+    async function sendChatMessage() {
+        const inputEl = document.getElementById('chatInput');
+        const text = inputEl.value.trim();
+        const apiKey = document.getElementById('globalApiKey').value.trim();
+        if (!text) return;
+        if (!apiKey) return showToast('Harap masukkan API Key terlebih dahulu.', 'warning');
+
+        const { modelChat } = getAiSettings();
+        appendMessage(text, true);
+        inputEl.value = '';
+        appendLoading();
+        chatHistory.push({ role: "user", parts: [{ text: text }] });
+
+        try {
+            const response = await fetch(`${GEMINI_API_BASE}/${modelChat}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: chatHistory,
+                    systemInstruction: { parts: [{ text: `Anda adalah mentor teknis senior dan rekan diskusi karir santai untuk Genta. Bicara dengan gaya santai, akrab ("Mas Genta" / "Bro"), solutif, dan tidak kaku. Hindari format laporan panjang. KONTEKS SAAT INI: ${getCurrentJobContext()}` }] },
+                    generationConfig: { temperature: 0.9 }
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `HTTP Error ${response.status}`);
+            }
+            const data = await response.json();
+            const botReply = data.candidates[0].content.parts[0].text;
+            
+            chatHistory.push({ role: "model", parts: [{ text: botReply }] });
+            removeLoading();
+            appendMessage(botReply, false);
+        } catch (error) {
+            chatHistory.pop();
+            removeLoading();
+            appendMessage(`**Sistem Gagal:** ${error.message}`, false, true);
+        }
+    }
+// ================= MODUL KALENDER & TRACKER LAMARAN =================
+    const TRACKER_STORAGE_KEY = 'gentaApplicationTracker';
+    let currentTrackerFilter = 'ALL';
+    let activeJobMeta = { posisi: '', perusahaan: '', portal: 'Lainnya', link: '' };
+
+    function getTodayIsoDate() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function normalizeJobKey(posisi, perusahaan) {
+        return `${String(posisi || '').trim().toLowerCase().replace(/\s+/g, ' ')}||${String(perusahaan || '').trim().toLowerCase().replace(/\s+/g, ' ')}`;
+    }
+
+    function getTrackerList() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(TRACKER_STORAGE_KEY) || '[]');
+            return Array.isArray(raw) ? raw : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveTrackerList(list) {
+        localStorage.setItem(TRACKER_STORAGE_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+        scheduleCloudSync();
+    }
+
+    function isJobTracked(item) {
+        if (!item) return false;
+        const list = getTrackerList();
+        const targetKey = normalizeJobKey(item.posisi, item.perusahaan);
+        const targetLink = String(item.link || '').trim();
+
+        return list.some(entry => {
+            if (targetLink && entry.link && String(entry.link).trim() === targetLink) return true;
+            return normalizeJobKey(entry.posisi, entry.perusahaan) === targetKey;
+        });
+    }
+
+    function updateTrackerSidebarBadge() {
+        const badge = document.getElementById('badge-tracker');
+        if (!badge) return;
+        const count = getTrackerList().length;
+        badge.innerText = String(count);
+        badge.classList.toggle('hidden', count === 0);
+    }
+
+    function tandaiSudahDilamar(origBatchIdx, itemIdx) {
+        const batch = cachedRadarBatches[origBatchIdx];
+        const item = batch?.items?.[itemIdx];
+        if (!item) return;
+
+        if (isJobTracked(item)) {
+            showToast('Lowongan ini sudah tercatat di Tracker.', 'info');
+            return;
+        }
+
+        const list = getTrackerList();
+        list.unshift({
+            id: 'app_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            posisi: item.posisi || '',
+            perusahaan: item.perusahaan || '',
+            portal: batch.source || 'Jobstreet',
+            link: item.link || '',
+            appliedDate: getTodayIsoDate(),
+            status: 'Dilamar',
+            nextDate: '',
+            nextAgenda: '',
+            notes: [item.location, item.salary].filter(Boolean).join(' • ')
+        });
+
+        saveTrackerList(list);
+        updateTrackerSidebarBadge();
+        renderRadarFeed();
+        showToast(`"${item.posisi}" ditandai Sudah Dilamar!`, 'success');
+    }
+
+    function openTrackerForm(editId = null) {
+        const card = document.getElementById('trackerFormCard');
+        const titleEl = document.getElementById('trackerFormTitle');
+        if (!card) return;
+
+        if (editId) {
+            const entry = getTrackerList().find(x => x.id === editId);
+            if (!entry) return;
+            titleEl.innerText = 'Edit Data Lamaran';
+            document.getElementById('trkEditId').value = entry.id;
+            document.getElementById('trkPosisi').value = entry.posisi || '';
+            document.getElementById('trkPerusahaan').value = entry.perusahaan || '';
+            document.getElementById('trkPortal').value = entry.portal || 'Lainnya';
+            document.getElementById('trkStatus').value = entry.status || 'Dilamar';
+            document.getElementById('trkAppliedDate').value = entry.appliedDate || getTodayIsoDate();
+            document.getElementById('trkNextDate').value = entry.nextDate || '';
+            document.getElementById('trkNextAgenda').value = entry.nextAgenda || '';
+            document.getElementById('trkLink').value = entry.link || '';
+            document.getElementById('trkNotes').value = entry.notes || '';
+        } else {
+            titleEl.innerText = 'Catat Lamaran Baru';
+            document.getElementById('trkEditId').value = '';
+            document.getElementById('trkPosisi').value = '';
+            document.getElementById('trkPerusahaan').value = '';
+            document.getElementById('trkPortal').value = 'Jobstreet';
+            document.getElementById('trkStatus').value = 'Dilamar';
+            document.getElementById('trkAppliedDate').value = getTodayIsoDate();
+            document.getElementById('trkNextDate').value = '';
+            document.getElementById('trkNextAgenda').value = '';
+            document.getElementById('trkLink').value = '';
+            document.getElementById('trkNotes').value = '';
+        }
+
+        card.classList.remove('hidden');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeTrackerForm() {
+        const card = document.getElementById('trackerFormCard');
+        if (card) card.classList.add('hidden');
+    }
+
+    function fillTrackerFromDashboard() {
+        const posisi = document.getElementById('jobTitleInput')?.value.trim() || '';
+        const perusahaan = document.getElementById('companyNameInput')?.value.trim() || '';
+
+        if (!posisi && !perusahaan) {
+            return showToast('Input Detail Lowongan di Dashboard masih kosong.', 'warning');
+        }
+
+        document.getElementById('trkPosisi').value = posisi;
+        document.getElementById('trkPerusahaan').value = perusahaan;
+
+        if (normalizeJobKey(posisi, perusahaan) === normalizeJobKey(activeJobMeta.posisi, activeJobMeta.perusahaan)) {
+            document.getElementById('trkPortal').value = activeJobMeta.portal || 'Lainnya';
+            document.getElementById('trkLink').value = activeJobMeta.link || '';
+        }
+        showToast('Data loker diambil dari Dashboard.', 'success');
+    }
+
+    function saveTrackerEntry() {
+        const editId = document.getElementById('trkEditId').value.trim();
+        const posisi = document.getElementById('trkPosisi').value.trim();
+        const perusahaan = document.getElementById('trkPerusahaan').value.trim();
+
+        if (!posisi || !perusahaan) {
+            return showToast('Posisi dan Perusahaan wajib diisi.', 'warning');
+        }
+
+        const entryData = {
+            id: editId || ('app_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
+            posisi,
+            perusahaan,
+            portal: document.getElementById('trkPortal').value || 'Lainnya',
+            status: document.getElementById('trkStatus').value || 'Dilamar',
+            appliedDate: document.getElementById('trkAppliedDate').value || getTodayIsoDate(),
+            nextDate: document.getElementById('trkNextDate').value || '',
+            nextAgenda: document.getElementById('trkNextAgenda').value.trim(),
+            link: document.getElementById('trkLink').value.trim(),
+            notes: document.getElementById('trkNotes').value.trim()
+        };
+
+        const list = getTrackerList();
+        if (editId) {
+            const idx = list.findIndex(x => x.id === editId);
+            if (idx !== -1) list[idx] = entryData;
+            else list.unshift(entryData);
+        } else {
+            list.unshift(entryData);
+        }
+
+        saveTrackerList(list);
+        updateTrackerSidebarBadge();
+        closeTrackerForm();
+        renderTrackerView();
+        if (cachedRadarBatches.length > 0) renderRadarFeed();
+        showToast(editId ? 'Data lamaran diperbarui!' : 'Lamaran berhasil dicatat!', 'success');
+    }
+
+    function quickUpdateTrackerStatus(id, newStatus) {
+        const list = getTrackerList();
+        const item = list.find(x => x.id === id);
+        if (!item) return;
+        item.status = newStatus;
+        saveTrackerList(list);
+        renderTrackerView();
+        showToast(`Status "${item.posisi}" diubah ke ${newStatus}.`, 'info');
+    }
+
+    function deleteTrackerEntry(id) {
+        const list = getTrackerList();
+        const target = list.find(x => x.id === id);
+        if (!target) return;
+        if (!confirm(`Hapus catatan lamaran "${target.posisi} - ${target.perusahaan}"?`)) return;
+
+        saveTrackerList(list.filter(x => x.id !== id));
+        updateTrackerSidebarBadge();
+        renderTrackerView();
+        if (cachedRadarBatches.length > 0) renderRadarFeed();
+        showToast('Catatan lamaran dihapus.', 'info');
+    }
+
+    function setTrackerFilter(filterVal) {
+        currentTrackerFilter = filterVal;
+        document.querySelectorAll('.trk-filter-btn').forEach(btn => {
+            const active = btn.getAttribute('data-filter') === filterVal;
+            btn.className = active
+                ? 'trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-accent text-white'
+                : 'trk-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-400 hover:text-white';
+        });
+        renderTrackerView();
+    }
+
+    function formatIdDate(isoStr) {
+        if (!isoStr) return '-';
+        const parts = isoStr.split('-');
+        if (parts.length !== 3) return isoStr;
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function buildGCalLink(item) {
+        const dt = (item.nextDate || '').replace(/-/g, '');
+        if (!dt) return '#';
+        const title = encodeURIComponent(`${item.nextAgenda || item.status}: ${item.posisi} (${item.perusahaan})`);
+        const details = encodeURIComponent(`Portal: ${item.portal}\nCatatan: ${item.notes || '-'}\nLink: ${item.link || '-'}`);
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dt}/${dt}&details=${details}`;
+    }
+
+    function renderTrackerView() {
+        const list = getTrackerList();
+        const statsGrid = document.getElementById('trackerStatsGrid');
+        const scheduleBox = document.getElementById('upcomingScheduleBox');
+        const scheduleList = document.getElementById('upcomingScheduleList');
+        const listContainer = document.getElementById('trackerListContainer');
+        if (!statsGrid || !listContainer) return;
+
+        // 1. Statistik 5 Status
+        const statuses = [
+            { key: 'Dilamar',   color: 'text-sky-400',     border: 'border-sky-500/30' },
+            { key: 'Psikotes',  color: 'text-amber-400',   border: 'border-amber-500/30' },
+            { key: 'Interview', color: 'text-indigo-400',  border: 'border-indigo-500/30' },
+            { key: 'Offering',  color: 'text-emerald-400', border: 'border-emerald-500/30' },
+            { key: 'Ditolak',   color: 'text-rose-400',    border: 'border-rose-500/30' }
+        ];
+
+        statsGrid.innerHTML = statuses.map(st => {
+            const total = list.filter(x => x.status === st.key).length;
+            return `
+                <button type="button" onclick="setTrackerFilter('${st.key}')" class="bg-brand-surface border ${st.border} hover:border-brand-accent rounded-xl p-4 text-left transition-colors">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">${st.key}</p>
+                    <p class="text-2xl font-bold ${st.color} mt-1">${total}</p>
+                </button>
+            `;
+        }).join('');
+
+        // 2. Agenda Terdekat
+        const today = getTodayIsoDate();
+        const upcoming = list
+            .filter(x => x.nextDate && x.nextDate >= today && x.status !== 'Ditolak')
+            .sort((a, b) => a.nextDate.localeCompare(b.nextDate));
+
+        if (upcoming.length > 0 && scheduleBox && scheduleList) {
+            scheduleBox.classList.remove('hidden');
+            scheduleList.innerHTML = upcoming.slice(0, 4).map(item => {
+                const diffDays = Math.round((new Date(item.nextDate + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+                const hLabel = diffDays === 0 ? 'HARI INI' : `H-${diffDays}`;
+                return `
+                    <div class="bg-slate-900/90 border border-indigo-500/30 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white">${hLabel}</span>
+                                <span class="text-xs font-mono text-indigo-300">${formatIdDate(item.nextDate)}</span>
+                            </div>
+                            <p class="text-sm font-bold text-white truncate mt-1">${escapeHtml(item.nextAgenda || item.status)} — ${escapeHtml(item.perusahaan)}</p>
+                            <p class="text-xs text-slate-400 truncate">${escapeHtml(item.posisi)}</p>
+                        </div>
+                        <a href="${buildGCalLink(item)}" target="_blank" rel="noopener noreferrer" title="Tambah ke Google Calendar" class="flex-shrink-0 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 px-2.5 py-2 rounded-lg text-xs transition-colors">
+                            <i class="ph-fill ph-calendar-plus text-base"></i>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        } else if (scheduleBox) {
+            scheduleBox.classList.add('hidden');
+        }
+
+        // 3. Filter & Daftar Kartu Lamaran
+        const q = (document.getElementById('trackerSearchInput')?.value || '').trim().toLowerCase();
+        const filtered = list.filter(item => {
+            if (currentTrackerFilter !== 'ALL' && item.status !== currentTrackerFilter) return false;
+            if (!q) return true;
+            return `${item.posisi} ${item.perusahaan} ${item.portal} ${item.notes}`.toLowerCase().includes(q);
+        });
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = `
+                <div class="bg-brand-surface border border-brand-border rounded-2xl p-10 text-center">
+                    <i class="ph-fill ph-clipboard-text text-4xl text-slate-600 mb-2"></i>
+                    <p class="text-sm font-semibold text-white">Belum ada data lamaran yang cocok</p>
+                    <p class="text-xs text-slate-400 mt-1">Klik "Catat Lamaran Baru" atau tandai langsung dari tab Radar Loker.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const badgeClass = {
+            Dilamar:   'bg-sky-500/15 text-sky-300 border-sky-500/30',
+            Psikotes:  'bg-amber-500/15 text-amber-300 border-amber-500/30',
+            Interview: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+            Offering:  'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+            Ditolak:   'bg-rose-500/15 text-rose-300 border-rose-500/30'
+        };
+
+        listContainer.innerHTML = filtered.map(item => `
+            <div class="bg-brand-surface border border-brand-border hover:border-slate-600 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <h4 class="font-bold text-white text-sm">${escapeHtml(item.posisi)}</h4>
+                        <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${badgeClass[item.status] || badgeClass.Dilamar}">${escapeHtml(item.status)}</span>
+                        <span class="text-[11px] bg-slate-900 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-md">${escapeHtml(item.portal)}</span>
+                    </div>
+                    <p class="text-xs text-sky-400 font-medium">🏢 ${escapeHtml(item.perusahaan)} <span class="text-slate-500 font-normal">• Dilamar ${formatIdDate(item.appliedDate)}</span></p>
+                    ${item.nextDate ? `<p class="text-xs text-indigo-300 mt-1">📅 Jadwal: <strong>${formatIdDate(item.nextDate)}</strong>${item.nextAgenda ? ' — ' + escapeHtml(item.nextAgenda) : ''}</p>` : ''}
+                    ${item.notes ? `<p class="text-xs text-slate-400 mt-1">📝 ${escapeHtml(item.notes)}</p>` : ''}
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                    <select onchange="quickUpdateTrackerStatus('${item.id}', this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-accent">
+                        ${['Dilamar', 'Psikotes', 'Interview', 'Offering', 'Ditolak'].map(st => `<option value="${st}" ${item.status === st ? 'selected' : ''}>${st}</option>`).join('')}
+                    </select>
+                    ${item.link ? `<a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" title="Buka Link Loker" class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white"><i class="ph ph-arrow-square-out text-sm"></i></a>` : ''}
+                    <button type="button" onclick="openTrackerForm('${item.id}')" title="Edit" class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sky-400 hover:text-sky-300"><i class="ph ph-pencil-simple text-sm"></i></button>
+                    <button type="button" onclick="deleteTrackerEntry('${item.id}')" title="Hapus" class="p-2 rounded-lg bg-slate-900 hover:bg-rose-500/20 border border-slate-700 text-slate-400 hover:text-rose-400"><i class="ph ph-trash text-sm"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+        // ================= MODUL CLOUD SYNC & LOGIN (SUPABASE) =================
+    const SUPABASE_URL      = 'https://crkhizisoigozqnonwqv.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_xPLe9IAB0fMialpK5Y46Hw_BvMzP6h2';
+
+    let supabaseClient = null;
+    let currentCloudUser = null;
+    let cloudSyncTimer = null;
+
+    function setCloudStatusUI(text, colorClass = 'text-emerald-400') {
+        const el = document.getElementById('cloudSyncStatus');
+        if (!el) return;
+        el.className = `${colorClass} font-medium truncate`;
+        el.innerText = text;
+    }
+
+    async function initCloudAuthAndSync() {
+        if (!window.supabase || !SUPABASE_URL.startsWith('https://') || SUPABASE_ANON_KEY.includes('ISI_')) {
+            loadLokerFeed(true);
+            return;
+        }
+
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+
+        if (session?.user) {
+            await onCloudSignedIn(session.user);
+        } else {
+            document.getElementById('authOverlay')?.classList.remove('hidden');
+        }
+    }
+
+    async function handleCloudLogin(event) {
+        event.preventDefault();
+        if (!supabaseClient) return;
+
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errEl = document.getElementById('loginErrorMsg');
+        const btn = document.getElementById('btnLoginSubmit');
+
+        errEl.classList.add('hidden');
+        btn.disabled = true;
+        btn.innerText = 'Memverifikasi...';
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+        btn.disabled = false;
+        btn.innerText = 'Masuk Workspace';
+
+        if (error) {
+            errEl.innerText = error.message;
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        await onCloudSignedIn(data.user);
+        showToast('Berhasil masuk & sinkronisasi Cloud aktif!', 'success');
+    }
+
+    async function handleCloudLogout() {
+        if (!supabaseClient || !confirm('Keluar dari akun Cloud di perangkat ini?')) return;
+        await supabaseClient.auth.signOut();
+        currentCloudUser = null;
+        document.getElementById('cloudAccountBar')?.classList.add('hidden');
+        document.getElementById('authOverlay')?.classList.remove('hidden');
+    }
+
+    async function onCloudSignedIn(user) {
+        currentCloudUser = user;
+        document.getElementById('authOverlay')?.classList.add('hidden');
+        document.getElementById('cloudAccountBar')?.classList.remove('hidden');
+        await pullUserStateFromCloud();
+        loadLokerFeed(true);
+    }
+
+    async function pullUserStateFromCloud() {
+        if (!supabaseClient || !currentCloudUser) return;
+        setCloudStatusUI('☁️ Memuat data...', 'text-amber-400');
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('user_state')
+                .select('*')
+                .eq('user_id', currentCloudUser.id)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data) {
+                const localDocx = await getDocxFromIndexedDB().catch(() => null);
+                await syncUserStateToCloud(localDocx?.buffer ? new File([localDocx.buffer], localDocx.name, { type: localDocx.type }) : null);
+                return;
+            }
+
+            if (data.master_db) localStorage.setItem('gentaMasterDB', JSON.stringify(data.master_db));
+            if (Array.isArray(data.tracker)) localStorage.setItem(TRACKER_STORAGE_KEY, JSON.stringify(data.tracker));
+            if (data.tone_cv) localStorage.setItem('gentaToneCV', data.tone_cv);
+            if (data.tone_cover) localStorage.setItem('gentaToneCover', data.tone_cover);
+            if (data.ai_settings && data.ai_settings.modelAnalisis) localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(data.ai_settings));
+            if (Array.isArray(data.read_keys)) localStorage.setItem(READ_KEYS_STORAGE, JSON.stringify(data.read_keys));
+
+            if (data.template_path && data.template_name) {
+                const localTpl = await getDocxFromIndexedDB().catch(() => null);
+                if (!localTpl || localTpl.name !== data.template_name || localTpl.updatedAt !== data.updated_at) {
+                    const { data: blob, error: dlErr } = await supabaseClient.storage
+                        .from('cv-templates')
+                        .download(data.template_path);
+                    if (!dlErr && blob) {
+                        await saveDocxRecordToIndexedDB({
+                            name: data.template_name,
+                            type: blob.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            buffer: await blob.arrayBuffer(),
+                            updatedAt: data.updated_at
+                        });
+                    }
+                }
+            }
+
+            await loadDatabase();
+            refreshReferenceStatusUIs();
+            updateSidebarModelLabel();
+            updateTrackerSidebarBadge();
+            if (currentTab === 'view-tracker') renderTrackerView();
+            setCloudStatusUI('☁️ Tersinkron', 'text-emerald-400');
+        } catch (err) {
+            console.error('Pull cloud error:', err);
+            setCloudStatusUI('⚠️ Gagal muat', 'text-rose-400');
+        }
+    }
+
+    function scheduleCloudSync() {
+        if (!supabaseClient || !currentCloudUser) return;
+        clearTimeout(cloudSyncTimer);
+        cloudSyncTimer = setTimeout(() => syncUserStateToCloud(null), 800);
+    }
+
+    async function syncUserStateToCloud(newDocxFile = null) {
+        if (!supabaseClient || !currentCloudUser) return;
+        setCloudStatusUI('☁️ Menyimpan...', 'text-amber-400');
+
+        try {
+            let templatePath = '';
+            let templateName = '';
+            const savedTpl = await getDocxFromIndexedDB().catch(() => null);
+
+            if (newDocxFile) {
+                templatePath = `${currentCloudUser.id}/template.docx`;
+                templateName = newDocxFile.name;
+                const { error: upErr } = await supabaseClient.storage
+                    .from('cv-templates')
+                    .upload(templatePath, newDocxFile, { upsert: true });
+                if (upErr) throw upErr;
+            } else if (savedTpl?.name) {
+                templatePath = `${currentCloudUser.id}/template.docx`;
+                templateName = savedTpl.name;
+            }
+
+            const payload = {
+                user_id: currentCloudUser.id,
+                master_db: JSON.parse(localStorage.getItem('gentaMasterDB') || '{"projects":[],"links":[]}'),
+                tracker: getTrackerList(),
+                tone_cv: localStorage.getItem('gentaToneCV') || '',
+                tone_cover: localStorage.getItem('gentaToneCover') || '',
+                ai_settings: getAiSettings(),
+                read_keys: Array.from(getReadBatchKeys()),
+                template_name: templateName,
+                template_path: templatePath,
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient
+                .from('user_state')
+                .upsert(payload, { onConflict: 'user_id' });
+
+            if (error) throw error;
+            setCloudStatusUI('☁️ Tersinkron', 'text-emerald-400');
+        } catch (err) {
+            console.error('Sync cloud error:', err);
+            setCloudStatusUI('⚠️ Gagal sync', 'text-rose-400');
+        }
+    }
+    </script>
+</body>
+</html>
