@@ -1,0 +1,7 @@
+.env
+scraper.log
+loker_feed.js
+loker_feed.json
+loker_terkirim.json
+Backup_KarirGenta_*.json
+__pycache__/
