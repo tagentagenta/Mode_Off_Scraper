@@ -92,6 +92,309 @@
             transition: background-color 0.2s;
         }
         input[type="file"]::file-selector-button:hover { background-color: #0284C7; }
+
+        @media (max-width: 768px) {
+            /* Gunakan dynamic viewport height agar tidak terpotong address bar browser HP */
+            body {
+                height: 100dvh !important;
+                overflow: hidden;
+            }
+
+            /* Cegah auto-zoom browser HP saat mengetik di input/textarea/select */
+            input:not([type="checkbox"]):not([type="file"]),
+            textarea,
+            select {
+                font-size: 16px !important;
+            }
+
+            /* ===== SIDEBAR OFF-CANVAS DRAWER ===== */
+            #mainSidebar {
+                position: fixed !important;
+                inset: 0 auto 0 0 !important;
+                width: min(82vw, 300px) !important;
+                max-width: 300px !important;
+                border-right: 1px solid #334155 !important;
+                opacity: 1 !important;
+                z-index: 55 !important;
+                transform: translateX(-105%) !important;
+                pointer-events: none !important;
+                transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+
+            #mainSidebar > * {
+                min-width: 0 !important;
+            }
+
+            body.mobile-sidebar-open #mainSidebar {
+                transform: translateX(0) !important;
+                pointer-events: auto !important;
+            }
+
+            #sidebarBackdrop {
+                display: none !important;
+                z-index: 52 !important;
+            }
+
+            body.mobile-sidebar-open #sidebarBackdrop {
+                display: block !important;
+            }
+
+            #sidebarExpandBtn {
+                display: flex !important;
+                top: 12px !important;
+                left: 12px !important;
+                width: 42px !important;
+                height: 42px !important;
+                z-index: 45 !important;
+                transition: opacity 0.2s ease !important;
+            }
+
+            body.mobile-sidebar-open #sidebarExpandBtn {
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+
+            /* ===== SPACING HEADER & KONTEN UTAMA ===== */
+            #view-dashboard > div:first-child,
+            #view-tracker > div:first-child,
+            #view-database > div:first-child {
+                padding: 64px 16px 20px 16px !important;
+            }
+
+            #view-dashboard > div:nth-child(2),
+            #view-tracker > div:nth-child(2),
+            #view-database > div:nth-child(2) {
+                padding: 16px 14px 96px 14px !important;
+            }
+
+            /* ===== DASHBOARD ===== */
+            #view-dashboard > div:first-child h2 {
+                font-size: 1.5rem !important;
+                line-height: 1.25 !important;
+                margin-bottom: 0 !important;
+            }
+
+            #view-dashboard > div:first-child > div > div:last-child {
+                width: 100% !important;
+                min-width: 0 !important;
+                padding: 14px 16px !important;
+            }
+
+            #dashboardClock {
+                font-size: 1.6rem !important;
+            }
+
+            #view-dashboard .bg-brand-surface {
+                padding: 16px !important;
+            }
+
+            #jobSpecInput {
+                min-height: 120px !important;
+            }
+
+            #roleSelectionGrid {
+                gap: 10px !important;
+            }
+
+            .role-card {
+                padding: 12px !important;
+                gap: 12px !important;
+            }
+
+            /* ===== RADAR LOKER ===== */
+            #view-radar > div:first-child {
+                padding: 62px 14px 14px 14px !important;
+                gap: 12px !important;
+            }
+
+            #radarHeaderTitle {
+                font-size: 1rem !important;
+                line-height: 1.3 !important;
+            }
+
+            #view-radar > div:first-child > button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Hilangkan padding div kosong & rapikan panel saklar */
+            #radarControlPanel {
+                display: none !important;
+            }
+
+            #radarControlPanel + div {
+                padding: 12px 14px !important;
+                gap: 10px !important;
+            }
+
+            #radarControlPanel + div .text-right {
+                text-align: left !important;
+                width: 100%;
+            }
+
+            #btnScanNow {
+                width: 100%;
+                justify-content: center;
+                padding-top: 10px !important;
+                padding-bottom: 10px !important;
+            }
+
+            #radarFeedContainer {
+                padding: 14px 12px 24px 12px !important;
+                gap: 14px !important;
+            }
+
+            #radarFeedContainer > div.flex {
+                gap: 8px !important;
+            }
+
+            #radarFeedContainer > div.flex > div:first-child {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            #radarFeedContainer > div.flex > div:first-child i {
+                font-size: 14px !important;
+            }
+
+            #radarFeedContainer > div.flex > div:last-child {
+                padding: 12px !important;
+            }
+
+            #view-radar > div:last-child {
+                padding: 10px 72px 12px 14px !important;
+                text-align: left !important;
+            }
+
+            /* ===== KALENDER & TRACKER ===== */
+            #view-tracker > div:first-child h2,
+            #view-database > div:first-child h2 {
+                font-size: 1.4rem !important;
+            }
+
+            #view-tracker > div:first-child button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            #trackerStatsGrid > button:first-child {
+                grid-column: span 2 / span 2;
+            }
+
+            #trackerFilterBtns {
+                flex-wrap: nowrap !important;
+                overflow-x: auto;
+                width: 100%;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .trk-filter-btn {
+                flex-shrink: 0;
+                padding: 8px 12px !important;
+            }
+
+            /* ===== DATABASE PORTOFOLIO ===== */
+            #view-database > div:first-child > div > div:last-child {
+                width: 100%;
+            }
+
+            #view-database > div:first-child > div > div:last-child > button {
+                flex: 1 1 auto;
+                justify-content: center;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+
+            #view-database .bg-brand-surface {
+                padding: 16px !important;
+            }
+
+            .project-item {
+                padding: 14px !important;
+            }
+
+            /* Tampilkan tombol hapus proyek tanpa perlu hover di layar sentuh */
+            .project-item > button:first-child {
+                display: block !important;
+                top: 10px !important;
+                right: 10px !important;
+            }
+
+            .project-item .grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            .project-item .grid > div {
+                grid-column: span 1 / span 1 !important;
+            }
+
+            .link-item {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                padding: 14px !important;
+            }
+
+            .link-item > i {
+                display: none !important;
+            }
+
+            .link-item .grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+
+            .link-item > button {
+                align-self: flex-end;
+            }
+
+            input[type="file"] {
+                font-size: 12px !important;
+                max-width: 100%;
+            }
+
+            /* ===== FLOATING CHAT, MODAL & TOAST ===== */
+            div:has(> #chatWindow) {
+                bottom: 14px !important;
+                right: 12px !important;
+                left: 12px !important;
+                pointer-events: none;
+            }
+
+            div:has(> #chatWindow) > * {
+                pointer-events: auto;
+            }
+
+            #chatWindow {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 70dvh !important;
+                max-height: 520px !important;
+                margin-bottom: 10px !important;
+            }
+
+            #chatToggleBtn {
+                width: 50px !important;
+                height: 50px !important;
+            }
+
+            #aiSettingsModal > div,
+            #cvPreviewModal > div,
+            #coverLetterModal > div,
+            #askTrackModal > div {
+                max-height: 92dvh !important;
+            }
+
+            #toast {
+                top: 12px !important;
+                width: calc(100vw - 24px);
+                max-width: 380px;
+                padding: 10px 16px !important;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex antialiased selection:bg-brand-accent selection:text-white">
@@ -3208,6 +3511,64 @@ Aturan Penulisan:
             setCloudStatusUI('⚠️ Gagal sync', 'text-rose-400');
         }
     }
+
+    // ================= MOBILE SIDEBAR DRAWER CONTROLLER =================
+    (function () {
+        const MOBILE_BP = 768;
+        const isMobile = () => window.innerWidth <= MOBILE_BP;
+        const body = document.body;
+        const sidebar = document.getElementById('mainSidebar');
+
+        function setMobileSidebar(open) {
+            if (!isMobile()) {
+                body.classList.remove('mobile-sidebar-open');
+                return;
+            }
+            body.classList.toggle('mobile-sidebar-open', open);
+        }
+
+        function toggleMobileSidebar() {
+            setMobileSidebar(!body.classList.contains('mobile-sidebar-open'));
+        }
+
+        // Tangkap klik tombol sidebar khusus di layar mobile (capture phase)
+        // tanpa mengubah fungsi toggleSidebar() / applySidebarState() yang sudah ada
+        document.addEventListener('click', (e) => {
+            if (!isMobile()) return;
+
+            const trigger = e.target.closest(
+                '#sidebarExpandBtn, #sidebarBackdrop, #mainSidebar button[title="Lipat Sidebar"]'
+            );
+            if (trigger) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMobileSidebar();
+                return;
+            }
+
+            // Tutup drawer otomatis setelah memilih menu, pill bot, atau modal AI
+            if (e.target.closest('#mainSidebar .nav-btn, #sidebarBotPill, #sidebarModelSummary, #mainSidebar button[onclick*="openAiSettingsModal"]')) {
+                setMobileSidebar(false);
+            }
+        }, true);
+
+        // Gestur geser ke kiri (swipe) untuk menutup sidebar di HP
+        if (sidebar) {
+            let touchStartX = 0;
+            sidebar.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            }, { passive: true });
+            sidebar.addEventListener('touchend', (e) => {
+                const deltaX = e.changedTouches[0].clientX - touchStartX;
+                if (isMobile() && deltaX < -50) setMobileSidebar(false);
+            }, { passive: true });
+        }
+
+        // Reset state drawer saat ukuran layar kembali ke desktop
+        window.addEventListener('resize', () => {
+            if (!isMobile()) body.classList.remove('mobile-sidebar-open');
+        });
+    })();
     </script>
 </body>
 </html>
