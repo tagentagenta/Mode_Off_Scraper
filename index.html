@@ -93,36 +93,191 @@
         }
         input[type="file"]::file-selector-button:hover { background-color: #0284C7; }
 
+        /* ===== MOBILE COMPACT APP MODE (HANYA AKTIF <= 768px, DESKTOP 100% TETAP) ===== */
+        #mobileTopBar,
+        #mobileBottomNav {
+            display: none;
+        }
+
         @media (max-width: 768px) {
-            /* Gunakan dynamic viewport height agar tidak terpotong address bar browser HP */
+            /* Skala ulang seluruh unit rem Tailwind agar font, kotak, padding, & ikon lebih mungil & proporsional */
+            html {
+                font-size: 13px !important;
+            }
+
             body {
                 height: 100dvh !important;
                 overflow: hidden;
+                font-size: 12.5px;
             }
 
-            /* Cegah auto-zoom browser HP saat mengetik di input/textarea/select */
+            /* Ukuran input, textarea, select ramping dan enak dilihat di HP */
             input:not([type="checkbox"]):not([type="file"]),
             textarea,
             select {
-                font-size: 16px !important;
+                font-size: 12.5px !important;
+                padding: 7px 10px !important;
+                border-radius: 9px !important;
             }
 
-            /* ===== SIDEBAR OFF-CANVAS DRAWER ===== */
+            input[type="file"] {
+                font-size: 11px !important;
+                max-width: 100%;
+            }
+
+            input[type="file"]::file-selector-button {
+                padding: 5px 10px !important;
+                font-size: 11px !important;
+                border-radius: 6px !important;
+                margin-right: 8px !important;
+            }
+
+            /* ===== TOP APP BAR RAMPING ===== */
+            #mobileTopBar {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 46px;
+                z-index: 46;
+                background: rgba(15, 23, 42, 0.96);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-bottom: 1px solid #1e293b;
+                padding: 0 10px;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            /* Sembunyikan tombol sidebar mengambang bawaan desktop */
+            #sidebarExpandBtn {
+                display: none !important;
+            }
+
+            /* ===== BOTTOM NAVIGATION BAR RAMPING ===== */
+            #mobileBottomNav {
+                display: flex !important;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: calc(54px + env(safe-area-inset-bottom, 0px));
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                z-index: 46;
+                background: rgba(15, 23, 42, 0.97);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-top: 1px solid #1e293b;
+                align-items: stretch;
+                justify-content: space-around;
+            }
+
+            .mob-nav-item {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+                color: #94a3b8;
+                font-size: 9.5px;
+                font-weight: 600;
+                position: relative;
+                background: transparent;
+                border: none;
+                padding: 4px 2px;
+                transition: color 0.18s ease;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .mob-nav-item i {
+                font-size: 18px;
+                line-height: 1;
+            }
+
+            .mob-nav-item.active {
+                color: #38bdf8;
+            }
+
+            .mob-nav-item.active-amber {
+                color: #fbbf24;
+            }
+
+            .mob-nav-item.active::before,
+            .mob-nav-item.active-amber::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 26%;
+                right: 26%;
+                height: 2px;
+                border-radius: 0 0 4px 4px;
+                background: currentColor;
+            }
+
+            .mob-nav-badge {
+                position: absolute;
+                top: 4px;
+                right: calc(50% - 17px);
+                min-width: 14px;
+                height: 14px;
+                padding: 0 3px;
+                border-radius: 9999px;
+                font-size: 8.5px;
+                font-weight: 700;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+            }
+
+            .mob-nav-badge.show {
+                display: inline-flex;
+            }
+
+            /* ===== MAIN AREA ===== */
+            main {
+                padding-top: 46px !important;
+                padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px)) !important;
+                height: 100dvh !important;
+            }
+
+            /* ===== SIDEBAR OFF-CANVAS DRAWER RAMPING ===== */
             #mainSidebar {
                 position: fixed !important;
                 inset: 0 auto 0 0 !important;
-                width: min(82vw, 300px) !important;
-                max-width: 300px !important;
+                width: min(76vw, 255px) !important;
+                max-width: 255px !important;
                 border-right: 1px solid #334155 !important;
                 opacity: 1 !important;
-                z-index: 55 !important;
+                z-index: 60 !important;
                 transform: translateX(-105%) !important;
                 pointer-events: none !important;
-                transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
             }
 
             #mainSidebar > * {
                 min-width: 0 !important;
+            }
+
+            #mainSidebar > div:first-child {
+                padding: 14px !important;
+            }
+
+            #mainSidebar nav {
+                padding: 12px 10px !important;
+                gap: 4px !important;
+            }
+
+            #mainSidebar .nav-btn {
+                padding: 8px 10px !important;
+                font-size: 12px !important;
+            }
+
+            #mainSidebar > div:last-child {
+                padding: 12px !important;
             }
 
             body.mobile-sidebar-open #mainSidebar {
@@ -132,198 +287,371 @@
 
             #sidebarBackdrop {
                 display: none !important;
-                z-index: 52 !important;
+                z-index: 55 !important;
             }
 
             body.mobile-sidebar-open #sidebarBackdrop {
                 display: block !important;
             }
 
-            #sidebarExpandBtn {
-                display: flex !important;
-                top: 12px !important;
-                left: 12px !important;
-                width: 42px !important;
-                height: 42px !important;
-                z-index: 45 !important;
-                transition: opacity 0.2s ease !important;
-            }
-
-            body.mobile-sidebar-open #sidebarExpandBtn {
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-
-            /* ===== SPACING HEADER & KONTEN UTAMA ===== */
+            /* ===== SPACING UMUM VIEW ===== */
             #view-dashboard > div:first-child,
             #view-tracker > div:first-child,
             #view-database > div:first-child {
-                padding: 64px 16px 20px 16px !important;
+                padding: 12px 12px 10px 12px !important;
             }
 
             #view-dashboard > div:nth-child(2),
             #view-tracker > div:nth-child(2),
             #view-database > div:nth-child(2) {
-                padding: 16px 14px 96px 14px !important;
+                padding: 10px 10px 76px 10px !important;
             }
 
-            /* ===== DASHBOARD ===== */
+            /* ===== DASHBOARD (BERANDA) KOMPAK ===== */
+            #view-dashboard > div:first-child > div {
+                gap: 10px !important;
+            }
+
+            #view-dashboard > div:first-child p {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
+
             #view-dashboard > div:first-child h2 {
-                font-size: 1.5rem !important;
+                font-size: 1.2rem !important;
                 line-height: 1.25 !important;
                 margin-bottom: 0 !important;
             }
 
+            /* Widget Jam jadi strip tipis 1 baris */
             #view-dashboard > div:first-child > div > div:last-child {
                 width: 100% !important;
                 min-width: 0 !important;
-                padding: 14px 16px !important;
-            }
-
-            #dashboardClock {
-                font-size: 1.6rem !important;
-            }
-
-            #view-dashboard .bg-brand-surface {
-                padding: 16px !important;
-            }
-
-            #jobSpecInput {
-                min-height: 120px !important;
-            }
-
-            #roleSelectionGrid {
-                gap: 10px !important;
-            }
-
-            .role-card {
-                padding: 12px !important;
-                gap: 12px !important;
-            }
-
-            /* ===== RADAR LOKER ===== */
-            #view-radar > div:first-child {
-                padding: 62px 14px 14px 14px !important;
-                gap: 12px !important;
-            }
-
-            #radarHeaderTitle {
-                font-size: 1rem !important;
-                line-height: 1.3 !important;
-            }
-
-            #view-radar > div:first-child > button {
-                width: 100%;
-                justify-content: center;
-            }
-
-            /* Hilangkan padding div kosong & rapikan panel saklar */
-            #radarControlPanel {
-                display: none !important;
-            }
-
-            #radarControlPanel + div {
-                padding: 12px 14px !important;
-                gap: 10px !important;
-            }
-
-            #radarControlPanel + div .text-right {
-                text-align: left !important;
-                width: 100%;
-            }
-
-            #btnScanNow {
-                width: 100%;
-                justify-content: center;
-                padding-top: 10px !important;
-                padding-bottom: 10px !important;
-            }
-
-            #radarFeedContainer {
-                padding: 14px 12px 24px 12px !important;
-                gap: 14px !important;
-            }
-
-            #radarFeedContainer > div.flex {
+                padding: 8px 12px !important;
+                border-radius: 12px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
                 gap: 8px !important;
             }
 
-            #radarFeedContainer > div.flex > div:first-child {
-                width: 28px !important;
-                height: 28px !important;
+            #dashboardClock {
+                font-size: 1.15rem !important;
             }
 
-            #radarFeedContainer > div.flex > div:first-child i {
+            #dashboardDate {
+                margin-top: 0 !important;
+                font-size: 10.5px !important;
+                text-align: right;
+            }
+
+            #view-dashboard .grid.gap-8 {
+                gap: 12px !important;
+            }
+
+            #view-dashboard .bg-brand-surface {
+                padding: 12px !important;
+                border-radius: 14px !important;
+            }
+
+            #view-dashboard .bg-brand-surface .mb-6 {
+                margin-bottom: 10px !important;
+            }
+
+            #view-dashboard .bg-brand-surface h3 {
+                font-size: 13.5px !important;
+            }
+
+            #jobSpecInput {
+                min-height: 88px !important;
+            }
+
+            #btnAnalyze,
+            #btnGenerateCV,
+            #btnGenerateCover {
+                padding: 9px 12px !important;
+                font-size: 12px !important;
+                border-radius: 10px !important;
+                margin-top: 10px !important;
+            }
+
+            #btnAnalyze i,
+            #btnGenerateCV i,
+            #btnGenerateCover i {
+                font-size: 15px !important;
+            }
+
+            /* Grid 6 Portofolio langsung 2 kolom ringkas di HP */
+            #roleSelectionGrid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 7px !important;
+            }
+
+            .role-card {
+                padding: 8px 9px !important;
+                gap: 8px !important;
+                border-radius: 10px !important;
+            }
+
+            .role-card > div:first-child {
+                width: 30px !important;
+                height: 30px !important;
+                flex-shrink: 0 !important;
+            }
+
+            .role-card > div:first-child i {
+                font-size: 15px !important;
+            }
+
+            .role-card h4 {
+                font-size: 11px !important;
+                line-height: 1.2 !important;
+            }
+
+            .role-card p {
+                font-size: 9px !important;
+                margin-top: 2px !important;
+                line-height: 1.2 !important;
+            }
+
+            #view-dashboard .border-t.pt-6 {
+                margin-top: 12px !important;
+                padding-top: 10px !important;
+                gap: 7px !important;
+            }
+
+            #view-dashboard .border-t.pt-6 button {
+                margin-top: 0 !important;
+            }
+
+            /* ===== RADAR LOKER (LEGA, BERSIH, RINGKAS) ===== */
+            #view-radar > div:first-child {
+                padding: 9px 10px !important;
+                gap: 8px !important;
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+            }
+
+            #view-radar > div:first-child > div {
+                flex: 1;
+                min-width: 0;
+                gap: 8px !important;
+                align-items: center !important;
+            }
+
+            #view-radar > div:first-child > div > div:last-child {
+                flex: 1;
+                min-width: 0;
+            }
+
+            #radarHeaderIconBox {
+                width: 32px !important;
+                height: 32px !important;
+                border-radius: 9px !important;
+                flex-shrink: 0;
+            }
+
+            #radarHeaderIcon {
+                font-size: 16px !important;
+            }
+
+            #view-radar > div:first-child .flex.items-center.gap-2 {
+                flex-wrap: wrap;
+                gap: 4px !important;
+            }
+
+            #radarHeaderTitle {
+                font-size: 12.5px !important;
+                line-height: 1.25 !important;
+            }
+
+            #view-radar > div:first-child span.rounded-full {
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+                font-size: 9px !important;
+                padding: 1px 6px !important;
+            }
+
+            #radarLastSync {
+                font-size: 10px !important;
+                margin-top: 2px !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Tombol Refresh mungil di kanan header (tidak memakan baris penuh) */
+            #view-radar > div:first-child > button {
+                width: auto !important;
+                flex-shrink: 0 !important;
+                padding: 6px 9px !important;
+                font-size: 11px !important;
+                border-radius: 8px !important;
+                gap: 4px !important;
+            }
+
+            #view-radar > div:first-child > button i {
                 font-size: 14px !important;
             }
 
-            #radarFeedContainer > div.flex > div:last-child {
-                padding: 12px !important;
-            }
-
+            /* Sembunyikan panel saklar Python laptop & footer teks panjang di HP */
+            #radarControlPanel,
+            #radarControlPanel + div,
             #view-radar > div:last-child {
-                padding: 10px 72px 12px 14px !important;
-                text-align: left !important;
+                display: none !important;
             }
 
-            /* ===== KALENDER & TRACKER ===== */
+            #radarFeedContainer {
+                padding: 10px 10px 72px 10px !important;
+                gap: 10px !important;
+            }
+
+            /* Sembunyikan avatar kiri bubble agar kartu loker dapat lebar layar penuh */
+            #radarFeedContainer > div.flex > div:first-child {
+                display: none !important;
+            }
+
+            #radarFeedContainer > div.flex > div:last-child {
+                padding: 10px !important;
+                border-radius: 12px !important;
+            }
+
+            #radarFeedContainer .bg-slate-900\/90 {
+                padding: 10px !important;
+                border-radius: 10px !important;
+            }
+
+            #radarFeedContainer h4 {
+                font-size: 12.5px !important;
+                line-height: 1.3 !important;
+            }
+
+            #radarFeedContainer .border-t button,
+            #radarFeedContainer .border-t a {
+                padding: 5px 8px !important;
+                font-size: 10.5px !important;
+                border-radius: 7px !important;
+            }
+
+            /* ===== KALENDER & TRACKER KOMPAK ===== */
             #view-tracker > div:first-child h2,
             #view-database > div:first-child h2 {
-                font-size: 1.4rem !important;
+                font-size: 1.15rem !important;
+                margin-bottom: 2px !important;
+            }
+
+            #view-tracker > div:first-child p,
+            #view-database > div:first-child p {
+                font-size: 11px !important;
             }
 
             #view-tracker > div:first-child button {
                 width: 100%;
                 justify-content: center;
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+                border-radius: 10px !important;
             }
 
-            #trackerStatsGrid > button:first-child {
-                grid-column: span 2 / span 2;
+            #trackerStatsGrid {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                gap: 6px !important;
+            }
+
+            #trackerStatsGrid > button {
+                padding: 8px 9px !important;
+                border-radius: 10px !important;
+            }
+
+            #trackerStatsGrid > button p:first-child {
+                font-size: 9.5px !important;
+            }
+
+            #trackerStatsGrid > button p:last-child {
+                font-size: 1.25rem !important;
+                margin-top: 2px !important;
+            }
+
+            #trackerFormCard {
+                padding: 12px !important;
+                border-radius: 14px !important;
             }
 
             #trackerFilterBtns {
                 flex-wrap: nowrap !important;
                 overflow-x: auto;
                 width: 100%;
-                padding-bottom: 4px;
+                padding-bottom: 2px;
                 -webkit-overflow-scrolling: touch;
             }
 
             .trk-filter-btn {
                 flex-shrink: 0;
-                padding: 8px 12px !important;
+                padding: 5px 9px !important;
+                font-size: 11px !important;
             }
 
-            /* ===== DATABASE PORTOFOLIO ===== */
+            #trackerListContainer > div {
+                padding: 10px !important;
+                gap: 8px !important;
+                border-radius: 10px !important;
+            }
+
+            /* ===== DATABASE PORTOFOLIO KOMPAK ===== */
             #view-database > div:first-child > div > div:last-child {
                 width: 100%;
+                gap: 6px !important;
             }
 
             #view-database > div:first-child > div > div:last-child > button {
                 flex: 1 1 auto;
                 justify-content: center;
-                padding-left: 12px !important;
-                padding-right: 12px !important;
+                padding: 7px 8px !important;
+                font-size: 11px !important;
+                border-radius: 8px !important;
+                gap: 4px !important;
+            }
+
+            #view-database > div:nth-child(2) {
+                gap: 12px !important;
             }
 
             #view-database .bg-brand-surface {
-                padding: 16px !important;
+                padding: 12px !important;
+                border-radius: 14px !important;
+            }
+
+            #view-database .bg-brand-surface h3 {
+                font-size: 13px !important;
+            }
+
+            #view-database .bg-brand-surface > div.flex.items-center.justify-between {
+                margin-bottom: 10px !important;
+                gap: 8px !important;
+            }
+
+            #view-database .bg-brand-surface > div.flex.items-center.justify-between button {
+                padding: 5px 9px !important;
+                font-size: 11px !important;
+                border-radius: 8px !important;
+                white-space: nowrap;
             }
 
             .project-item {
-                padding: 14px !important;
+                padding: 10px !important;
+                border-radius: 10px !important;
             }
 
-            /* Tampilkan tombol hapus proyek tanpa perlu hover di layar sentuh */
             .project-item > button:first-child {
                 display: block !important;
-                top: 10px !important;
-                right: 10px !important;
+                top: 8px !important;
+                right: 8px !important;
             }
 
             .project-item .grid {
                 grid-template-columns: 1fr !important;
-                gap: 12px !important;
+                gap: 8px !important;
+                margin-bottom: 8px !important;
             }
 
             .project-item .grid > div {
@@ -333,8 +661,9 @@
             .link-item {
                 flex-direction: column !important;
                 align-items: stretch !important;
-                gap: 10px !important;
-                padding: 14px !important;
+                gap: 8px !important;
+                padding: 10px !important;
+                border-radius: 10px !important;
             }
 
             .link-item > i {
@@ -343,23 +672,19 @@
 
             .link-item .grid {
                 grid-template-columns: 1fr !important;
-                gap: 10px !important;
+                gap: 7px !important;
             }
 
             .link-item > button {
                 align-self: flex-end;
             }
 
-            input[type="file"] {
-                font-size: 12px !important;
-                max-width: 100%;
-            }
-
-            /* ===== FLOATING CHAT, MODAL & TOAST ===== */
+            /* ===== FLOATING CHAT, MODAL & TOAST MUNGIL ===== */
             div:has(> #chatWindow) {
-                bottom: 14px !important;
-                right: 12px !important;
-                left: 12px !important;
+                bottom: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
+                right: 10px !important;
+                left: 10px !important;
+                z-index: 48 !important;
                 pointer-events: none;
             }
 
@@ -370,14 +695,19 @@
             #chatWindow {
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 70dvh !important;
-                max-height: 520px !important;
-                margin-bottom: 10px !important;
+                height: calc(100dvh - 132px) !important;
+                max-height: 460px !important;
+                margin-bottom: 8px !important;
+                border-radius: 14px !important;
             }
 
             #chatToggleBtn {
-                width: 50px !important;
-                height: 50px !important;
+                width: 42px !important;
+                height: 42px !important;
+            }
+
+            #chatToggleBtn i {
+                font-size: 20px !important;
             }
 
             #aiSettingsModal > div,
@@ -385,13 +715,15 @@
             #coverLetterModal > div,
             #askTrackModal > div {
                 max-height: 92dvh !important;
+                border-radius: 14px !important;
             }
 
             #toast {
-                top: 12px !important;
-                width: calc(100vw - 24px);
-                max-width: 380px;
-                padding: 10px 16px !important;
+                top: 52px !important;
+                width: calc(100vw - 20px);
+                max-width: 340px;
+                padding: 8px 12px !important;
+                font-size: 11.5px !important;
                 justify-content: center;
             }
         }
@@ -722,7 +1054,7 @@
             <div class="bg-brand-surface/80 border-t border-brand-border px-8 py-3.5 text-center flex-shrink-0">
                 <p id="radarFooterNote" class="text-xs text-slate-400 flex items-center justify-center gap-2">
                     <i class="ph-fill ph-lock-simple text-slate-500"></i>
-                    Saluran siaran searah — pesan otomatis masuk dari <code class="text-brand-accent bg-slate-900 px-1.5 py-0.5 rounded">scraper_realtime.py</code> bersamaan dengan notifikasi WhatsApp.
+                    Saluran siaran searah — pesan otomatis masuk dari <code class="text-brand-accent bg-slate-900 px-1.5 py-0.5 rounded">scraper_realtime.py</code>.
                 </p>
             </div>
         </div>
@@ -3512,12 +3844,60 @@ Aturan Penulisan:
         }
     }
 
-    // ================= MOBILE SIDEBAR DRAWER CONTROLLER =================
+    // ================= MOBILE APP NAVIGATION & DRAWER CONTROLLER =================
     (function () {
         const MOBILE_BP = 768;
         const isMobile = () => window.innerWidth <= MOBILE_BP;
         const body = document.body;
         const sidebar = document.getElementById('mainSidebar');
+
+        // 1. Pasang Top App Bar & Bottom Navigation Bar (hanya tampil <= 768px via CSS)
+        const topBar = document.createElement('header');
+        topBar.id = 'mobileTopBar';
+        topBar.innerHTML = `
+            <div class="flex items-center gap-2 min-w-0">
+                <button type="button" id="mobMenuBtn" aria-label="Buka Menu & Pengaturan" class="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700 text-slate-200 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform">
+                    <i class="ph ph-list text-lg"></i>
+                </button>
+                <div class="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow">G</div>
+                <span id="mobTopTitle" class="font-bold text-[13px] text-white truncate">Dashboard Loker</span>
+            </div>
+            <button type="button" id="mobAiSettingsBtn" aria-label="Pengaturan AI" class="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700 text-slate-300 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform">
+                <i class="ph ph-gear-six text-base"></i>
+            </button>
+        `;
+
+        const bottomNav = document.createElement('nav');
+        bottomNav.id = 'mobileBottomNav';
+        bottomNav.setAttribute('aria-label', 'Navigasi Mobile');
+        bottomNav.innerHTML = `
+            <button type="button" class="mob-nav-item active" data-mob-tab="view-dashboard">
+                <i class="ph-fill ph-layout"></i>
+                <span>Beranda</span>
+            </button>
+            <button type="button" class="mob-nav-item" data-mob-tab="view-radar" data-mob-src="Jobstreet">
+                <i class="ph-fill ph-broadcast"></i>
+                <span>Jobstreet</span>
+                <span id="mob-badge-jobstreet" class="mob-nav-badge bg-sky-400 text-slate-950"></span>
+            </button>
+            <button type="button" class="mob-nav-item" data-mob-tab="view-radar" data-mob-src="Glints">
+                <i class="ph-fill ph-lightning"></i>
+                <span>Glints</span>
+                <span id="mob-badge-glints" class="mob-nav-badge bg-amber-400 text-slate-950"></span>
+            </button>
+            <button type="button" class="mob-nav-item" data-mob-tab="view-tracker">
+                <i class="ph-fill ph-calendar-check"></i>
+                <span>Tracker</span>
+                <span id="mob-badge-tracker" class="mob-nav-badge bg-emerald-500 text-slate-950"></span>
+            </button>
+            <button type="button" class="mob-nav-item" data-mob-tab="view-database">
+                <i class="ph-fill ph-database"></i>
+                <span>Portofolio</span>
+            </button>
+        `;
+
+        body.appendChild(topBar);
+        body.appendChild(bottomNav);
 
         function setMobileSidebar(open) {
             if (!isMobile()) {
@@ -3531,8 +3911,71 @@ Aturan Penulisan:
             setMobileSidebar(!body.classList.contains('mobile-sidebar-open'));
         }
 
-        // Tangkap klik tombol sidebar khusus di layar mobile (capture phase)
-        // tanpa mengubah fungsi toggleSidebar() / applySidebarState() yang sudah ada
+        // Sinkronisasi status tab aktif & badge dari sidebar desktop ke Mobile Bar
+        function syncMobileNavState() {
+            const titleEl = document.getElementById('mobTopTitle');
+            const items = bottomNav.querySelectorAll('.mob-nav-item');
+            items.forEach(el => el.classList.remove('active', 'active-amber'));
+
+            const isAct = (id) => {
+                const btn = document.getElementById(id);
+                return btn && !btn.classList.contains('text-brand-textMuted');
+            };
+
+            if (isAct('nav-radar-glints')) {
+                bottomNav.querySelector('[data-mob-src="Glints"]')?.classList.add('active-amber');
+                if (titleEl) titleEl.innerText = 'Radar Glints';
+            } else if (isAct('nav-radar-jobstreet')) {
+                bottomNav.querySelector('[data-mob-src="Jobstreet"]')?.classList.add('active');
+                if (titleEl) titleEl.innerText = 'Radar Jobstreet';
+            } else if (isAct('nav-tracker')) {
+                bottomNav.querySelector('[data-mob-tab="view-tracker"]')?.classList.add('active');
+                if (titleEl) titleEl.innerText = 'Kalender & Tracker';
+            } else if (isAct('nav-database')) {
+                bottomNav.querySelector('[data-mob-tab="view-database"]')?.classList.add('active');
+                if (titleEl) titleEl.innerText = 'Database Portofolio';
+            } else {
+                bottomNav.querySelector('[data-mob-tab="view-dashboard"]')?.classList.add('active');
+                if (titleEl) titleEl.innerText = 'Dashboard Loker';
+            }
+
+            const syncBadge = (srcBadgeId, srcTextId, targetId) => {
+                const srcBadge = document.getElementById(srcBadgeId);
+                const target = document.getElementById(targetId);
+                if (!srcBadge || !target) return;
+                const hidden = srcBadge.classList.contains('hidden');
+                if (hidden) {
+                    target.classList.remove('show');
+                } else {
+                    const rawText = srcTextId ? (document.getElementById(srcTextId)?.innerText || '') : srcBadge.innerText;
+                    const num = rawText.replace(/[^0-9]/g, '') || '!';
+                    target.innerText = num;
+                    target.classList.add('show');
+                }
+            };
+
+            syncBadge('badge-jobstreet', 'badge-jobstreet-text', 'mob-badge-jobstreet');
+            syncBadge('badge-glints', 'badge-glints-text', 'mob-badge-glints');
+            syncBadge('badge-tracker', null, 'mob-badge-tracker');
+        }
+
+        document.getElementById('mobMenuBtn')?.addEventListener('click', toggleMobileSidebar);
+        document.getElementById('mobAiSettingsBtn')?.addEventListener('click', () => {
+            setMobileSidebar(false);
+            if (typeof openAiSettingsModal === 'function') openAiSettingsModal();
+        });
+
+        bottomNav.addEventListener('click', (e) => {
+            const btn = e.target.closest('.mob-nav-item');
+            if (!btn) return;
+            const tab = btn.getAttribute('data-mob-tab');
+            const src = btn.getAttribute('data-mob-src') || null;
+            setMobileSidebar(false);
+            if (typeof switchTab === 'function') switchTab(tab, src);
+            setTimeout(syncMobileNavState, 20);
+        });
+
+        // Tangkap klik tombol tutup sidebar & backdrop khusus di layar mobile
         document.addEventListener('click', (e) => {
             if (!isMobile()) return;
 
@@ -3546,9 +3989,9 @@ Aturan Penulisan:
                 return;
             }
 
-            // Tutup drawer otomatis setelah memilih menu, pill bot, atau modal AI
             if (e.target.closest('#mainSidebar .nav-btn, #sidebarBotPill, #sidebarModelSummary, #mainSidebar button[onclick*="openAiSettingsModal"]')) {
                 setMobileSidebar(false);
+                setTimeout(syncMobileNavState, 20);
             }
         }, true);
 
@@ -3562,12 +4005,16 @@ Aturan Penulisan:
                 const deltaX = e.changedTouches[0].clientX - touchStartX;
                 if (isMobile() && deltaX < -50) setMobileSidebar(false);
             }, { passive: true });
+
+            const observer = new MutationObserver(() => syncMobileNavState());
+            observer.observe(sidebar, { subtree: true, attributes: true, attributeFilter: ['class'], characterData: true, childList: true });
         }
 
-        // Reset state drawer saat ukuran layar kembali ke desktop
         window.addEventListener('resize', () => {
             if (!isMobile()) body.classList.remove('mobile-sidebar-open');
         });
+
+        setTimeout(syncMobileNavState, 150);
     })();
     </script>
 </body>
